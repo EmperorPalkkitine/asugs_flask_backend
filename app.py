@@ -38,7 +38,7 @@ def send_data():
 def get_data(user_id):
     try:
         # SQL query to fetch data based on user_id
-        cursor.execute("SELECT email, name, phone FROM users WHERE id = %s", (user_id,))
+        cursor.execute("SELECT email, name, phone FROM User WHERE id = %s", (user_id,))
         result = cursor.fetchone()  # Fetch one record
 
         if result:
