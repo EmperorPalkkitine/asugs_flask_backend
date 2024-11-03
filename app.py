@@ -34,22 +34,35 @@ def send_data():
         print(f"Unexpected error: {e}")
         return jsonify({"error": "An unexpected error occurred"}), 500
     
-@app.route('/get-data/<int:user_id>', methods=['GET'])
-def get_data(user_id):
+@app.route('/get-data/User/<string:identifier>', methods=['GET'])
+def get_user_data(identifier):
     try:
-        # SQL query to fetch data based on user_id
-        cursor.execute("SELECT email, name, phone FROM User WHERE id = %s", (user_id,))
-        result = cursor.fetchone()  # Fetch one record
+        if identifier.lower() == 'null':
+            # SQL query to fetch all users with NULL email
+            query = "SELECT id, email, name FROM User WHERE email IS NULL"
+            cursor.execute(query)
+            results = cursor.fetchall()  # Fetch all records
 
-        if result:
-            user_data = {
-                'email': result[0],
-                'name': result[1],
-                'phone': result[2]
-            }
-            return jsonify(user_data), 200
+            if results:
+                users = [{'id': row[0], 'email': row[1], 'name': row[2]} for row in results]
+                return jsonify(users), 200
+            else:
+                return jsonify({"error": "No users found with null email"}), 404
         else:
-            return jsonify({"error": "User not found"}), 404
+            # SQL query to fetch data based on user ID
+            query = "SELECT id, email, name FROM User WHERE id = %s"
+            cursor.execute(query, (identifier,))
+            result = cursor.fetchone()
+
+            if result:
+                user_data = {
+                    'id': result[0],
+                    'email': result[1],
+                    'name': result[2]
+                }
+                return jsonify(user_data), 200
+            else:
+                return jsonify({"error": "User not found"}), 404
 
     except mysql.connector.Error as err:
         print(f"Database Error: {err}")
@@ -57,7 +70,6 @@ def get_data(user_id):
     except Exception as e:
         print(f"Unexpected error: {e}")
         return jsonify({"error": "An unexpected error occurred"}), 500
-
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000)
