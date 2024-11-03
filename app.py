@@ -22,7 +22,7 @@ def send_data():
         user_email = data.get('email')
 
         # SQL query to insert data into the table
-        insert_query = "INSERT INTO users (email) VALUES (%s)"
+        insert_query = "INSERT INTO User (email) VALUES (%s)"
         cursor.execute(insert_query, (user_email,))
         db.commit()
 
