@@ -4,6 +4,7 @@ import mysql.connector
 
 app = Flask(__name__)
 CORS(app)
+
 # MySQL Database connection
 db = mysql.connector.connect(
     host= 'gridscout-db.cjkusa2a836b.us-east-2.rds.amazonaws.com',       # e.g., localhost
@@ -25,10 +26,13 @@ def send_data():
         cursor.execute(insert_query, (user_email,))
         db.commit()
 
-        return jsonify({"message": "Data inserted successfully!"}), 200
+        return jsonify({"message": "Data inserted successfully!"}), 201
+    except mysql.connector.Error as err:
+        print(f"Error: {err}")
+        return jsonify({"error": str(err)}), 500
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"Unexpected error: {e}")
+        return jsonify({"error": "An unexpected error occurred"}), 500
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000)
-
