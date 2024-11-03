@@ -39,7 +39,7 @@ def get_user_data(identifier):
     try:
         if identifier.lower() == 'null':
             # SQL query to fetch all users with NULL email
-            query = "SELECT id, email, name FROM User WHERE email IS NULL"
+            query = "SELECT id, email, name FROM User WHERE id IS NULL"
             cursor.execute(query)
             results = cursor.fetchall()  # Fetch all records
 
@@ -47,7 +47,7 @@ def get_user_data(identifier):
                 users = [{'id': row[0], 'email': row[1], 'name': row[2]} for row in results]
                 return jsonify(users), 200
             else:
-                return jsonify({"error": "No users found with null email"}), 404
+                return jsonify({"error": "No users found with null id"}), 404
         else:
             # SQL query to fetch data based on user ID
             query = "SELECT id, email, name FROM User WHERE id = %s"
