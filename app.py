@@ -15,6 +15,7 @@ db = mysql.connector.connect(
 
 cursor = db.cursor()
 
+#write data to table
 @app.route('/send-data', methods=['POST'])
 def send_data():
     try:
@@ -35,7 +36,8 @@ def send_data():
     except Exception as e:
         print(f"Unexpected error: {e}")
         return jsonify({"error": "An unexpected error occurred"}), 500
-    
+
+#get data from table   
 @app.route('/get-data/User/<string:identifier>', methods=['GET'])
 def get_user_data(identifier):
     try:
