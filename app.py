@@ -19,16 +19,18 @@ cursor = db.cursor()
 def send_data():
     try:
         data = request.json
+        user_id = data.get('id')  # Get id from the request
         user_email = data.get('email')
+        user_name = data.get('name')
 
-        # SQL query to insert data into the table
-        insert_query = "INSERT INTO User (email) VALUES (%s)"
-        cursor.execute(insert_query, (user_email,))
+        # SQL query to insert data into the User table
+        insert_query = "INSERT INTO User (id, email, name) VALUES (%s, %s, %s)"
+        cursor.execute(insert_query, (user_id, user_email, user_name))
         db.commit()
 
-        return jsonify({"message": "Data inserted successfully!"}), 201
+        return jsonify({"message": "Data inserted successfully"}), 201
     except mysql.connector.Error as err:
-        print(f"Error: {err}")
+        print(f"Database Error: {err}")
         return jsonify({"error": str(err)}), 500
     except Exception as e:
         print(f"Unexpected error: {e}")
