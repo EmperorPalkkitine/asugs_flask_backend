@@ -33,6 +33,31 @@ def send_data():
     except Exception as e:
         print(f"Unexpected error: {e}")
         return jsonify({"error": "An unexpected error occurred"}), 500
+    
+@app.route('/get-data/<int:user_id>', methods=['GET'])
+def get_data(user_id):
+    try:
+        # SQL query to fetch data based on user_id
+        cursor.execute("SELECT email, name, phone FROM users WHERE id = %s", (user_id,))
+        result = cursor.fetchone()  # Fetch one record
+
+        if result:
+            user_data = {
+                'email': result[0],
+                'name': result[1],
+                'phone': result[2]
+            }
+            return jsonify(user_data), 200
+        else:
+            return jsonify({"error": "User not found"}), 404
+
+    except mysql.connector.Error as err:
+        print(f"Database Error: {err}")
+        return jsonify({"error": str(err)}), 500
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+        return jsonify({"error": "An unexpected error occurred"}), 500
+
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000)
