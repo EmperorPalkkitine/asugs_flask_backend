@@ -62,6 +62,7 @@ def get_user_data(identifier):
                     'email': result[1],
                     'name': result[2]
                 }
+                print("Response Data: ", user_data)
                 return jsonify(user_data), 200
             else:
                 return jsonify({"error": "User not found"}), 404
