@@ -20,13 +20,26 @@ cursor = db.cursor()
 def send_data():
     try:
         data = request.json
-        user_id = data.get('id')  # Get id from the request
-        user_email = data.get('email')
-        user_name = data.get('name')
+        component_id = data.get('component_id')
+        component_type = data.get('component_type')
+        electrical_specifications = data.get('electrical_specifications')
+        connection_points = data.get('connection_points')
+        geolocation = data.get('geolocation')
+        installation_date = data.get('installation_date')
+        operation_status = data.get('operation_status')
+        der = data.get('der')        
 
         # SQL query to insert data into the User table
-        insert_query = "INSERT INTO User (id, email, name) VALUES (%s, %s, %s)"
-        cursor.execute(insert_query, (user_id, user_email, user_name))
+        insert_query = """
+            INSERT INTO ParameterTests 
+            (component_id, component_type, electrical_specifications, connection_points, geolocation, installation_date, operation_status, der)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        cursor.execute(insert_query, (
+            component_id, component_type, electrical_specifications,
+            connection_points, geolocation, installation_date,
+            operation_status, der
+        ))
         db.commit()
 
         return jsonify({"message": "Data inserted successfully"}), 201
