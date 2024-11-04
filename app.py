@@ -51,36 +51,34 @@ def send_data():
         return jsonify({"error": "An unexpected error occurred"}), 500
 
 #get data from table   
-@app.route('/get-data/User/<string:identifier>', methods=['GET'])
-def get_user_data(identifier):
+@app.route('/get-data/<string:component_id>', methods=['GET'])
+def get_data_by_component_id(component_id):
     try:
-        if identifier.lower() == 'null':
-            # SQL query to fetch all users with NULL email
-            query = "SELECT id, email, name FROM User WHERE id IS NULL"
-            cursor.execute(query)
-            results = cursor.fetchall()  # Fetch all records
+        # SQL query to fetch data based on component_id
+        query = """
+            SELECT component_id, component_type, electrical_specifications, connection_points,
+                   geolocation, installation_date, operation_status, der
+            FROM ParameterTests
+            WHERE component_id = %s
+        """
+        cursor.execute(query, (component_id,))
+        result = cursor.fetchone()
 
-            if results:
-                users = [{'id': row[0], 'email': row[1], 'name': row[2]} for row in results]
-                return jsonify(users), 200
-            else:
-                return jsonify({"error": "No users found with null id"}), 404
+        if result:
+            # Map the result to a dictionary
+            data = {
+                'component_id': result[0],
+                'component_type': result[1],
+                'electrical_specifications': result[2],
+                'connection_points': result[3],
+                'geolocation': result[4],
+                'installation_date': result[5],
+                'operation_status': result[6],
+                'der': result[7],
+            }
+            return jsonify(data), 200
         else:
-            # SQL query to fetch data based on user ID
-            query = "SELECT id, email, name FROM User WHERE id = %s"
-            cursor.execute(query, (identifier,))
-            result = cursor.fetchone()
-
-            if result:
-                user_data = {
-                    'id': result[0],
-                    'email': result[1],
-                    'name': result[2]
-                }
-                print("Response Data: ", user_data)
-                return jsonify(user_data), 200
-            else:
-                return jsonify({"error": "User not found"}), 404
+            return jsonify({"error": "Component not found"}), 404
 
     except mysql.connector.Error as err:
         print(f"Database Error: {err}")
@@ -88,6 +86,7 @@ def get_user_data(identifier):
     except Exception as e:
         print(f"Unexpected error: {e}")
         return jsonify({"error": "An unexpected error occurred"}), 500
+
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000)
