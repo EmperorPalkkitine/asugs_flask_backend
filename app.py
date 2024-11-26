@@ -71,8 +71,8 @@ s3_client = boto3.client(
 
 
 # Get data from MySQL table
-@app.route('/get_data', methods=['GET'])
-def get_data():
+@app.route('/get_data/<component_id>', methods=['GET'])
+def get_data(component_id):
     try:
         # Retrieve component type and ID from query parameters
         component_type = request.args.get('component_type')
