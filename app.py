@@ -215,7 +215,29 @@ def modify_component():
             updated_lines.append(line)
 
             # Reset the state when a new component is found
-            if "New" in li
+            if "New" in line and component_updated:
+                in_component = False
+                bus_found = False
+
+        # Final verification: Check the updated lines after the loop
+        print(f"Updated lines verification:\n{updated_lines[:21]}")
+
+        # Write the updated lines back to the local file
+        with open(local_file, "w") as file:
+            file.writelines(updated_lines)
+            print(f"Final updated lines written to file: {updated_lines[:21]}")
+
+        # Upload the updated file to S3
+        new_dss_file_key = f"Trial2_Functional_Circuit_{int(time.time())}.py"
+        print(f"Uploading updated file to S3: {new_dss_file_key}")
+        s3_client.upload_file(local_file, BUCKET_NAME, new_dss_file_key)
+        print(f"File successfully uploaded to S3: {new_dss_file_key}")
+
+        return jsonify({"message": "Component updated successfully.", "new_file": new_dss_file_key}), 200
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000)
