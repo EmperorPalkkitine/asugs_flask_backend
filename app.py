@@ -180,53 +180,44 @@ def modify_component():
         bus_found = False
         component_updated = False  # Track if the component name has been updated
 
+        # Start iterating through the lines
         for i, line in enumerate(lines):
             # Debugging print: Track every line processed
             print(f"Processing line {i}: {line.strip()}")
 
-            # Start processing the specific component
-            if f"New {component_type.capitalize()}" in line:
-                in_component = True
+            # Check if the line contains the component we want to update
+            if f"New {component_type.capitalize()}" in line and not component_updated:
                 print(f"Component found: {line.strip()}")
-                component_start_index = i
-                # Extract the current component name (after "New")
+                # Get current component name (e.g., Transformer.XFM1)
                 current_component_name = line.split()[1]
                 print(f"Component name identified: {current_component_name}")
 
-            if in_component:
-                print(f"Processing line within component block: {line.strip()}")
-                if f"bus={closest_bus}" in line:
-                    bus_found = True
-                    print(f"Bus found: {line.strip()}")
+                # Replace the old component name with the new one
+                updated_line = line.replace(current_component_name.split('.')[-1], component_id)
+                print(f"Updated component name: {updated_line.strip()}")
+                updated_lines.append(updated_line)  # Append the updated line
+                component_updated = True  # Mark as updated
+                continue  # Skip adding the original line
 
-                if bus_found and not component_updated:
-                    # Remove the old component line and add the updated component name line
-                    updated_line = lines[component_start_index].replace(
-                        current_component_name.split('.')[-1], component_id
-                    )
-                    print(f"Updated component name at line {component_start_index}: {updated_line.strip()}")
-                    updated_lines.append(updated_line)  # Append the updated line to the list
-                    component_updated = True  # Mark as updated
+            # If we find a line with the bus, add it to the updated_lines
+            if f"bus={closest_bus}" in line:
+                bus_found = True
+                print(f"Bus found: {line.strip()}")
 
-                # Update parameters in the line
+            # If we're within a component block, process parameters
+            if in_component and bus_found:
                 for key, value in parameters.items():
                     if key in line:
                         line = update_line_parameter(line, key, value)
                         print(f"Updated parameter: {key} = {value}")
-                
-                # Append the modified line to updated_lines after all changes
-                updated_lines.append(line)  # Ensure the line is appended after all changes
 
-            # Exit the block when encountering a new component or unrelated line
-            if in_component and "New" in line and i != component_start_index:
-                print(f"Exiting component block at line {i}: {line.strip()}")
+            # Add the current line to the new file (unless it was already handled above)
+            updated_lines.append(line)
+
+            # Reset the state when a new component is found
+            if "New" in line and i != component_start_index and component_updated:
                 in_component = False
                 bus_found = False
-                component_updated = False
-
-            # Append the line if it’s not part of the component block
-            if not in_component:
-                updated_lines.append(line)
 
         # Final verification: Check the updated lines after the loop
         print(f"Updated lines verification:\n{updated_lines[:21]}")
