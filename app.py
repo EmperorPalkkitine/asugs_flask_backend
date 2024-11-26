@@ -179,46 +179,46 @@ def modify_component():
         in_component = False
         bus_found = False
 
-        # Iterate over each line
         for i, line in enumerate(lines):
             if f"New {component_type.capitalize()}" in line:
                 in_component = True
+                bus_found = False  # Reset bus_found when entering a new component block
                 print(f"Component found: {line}")
-                component_start_index = i  # Mark where the component begins
+                component_start_index = i  # Mark where the component starts
 
             if in_component:
-                # Look ahead to check if the bus parameter appears in the following lines
+                # Look ahead for the bus parameter
                 if f"bus={closest_bus}" in line:
                     bus_found = True
                     print(f"Bus found: {line}")
 
-                # When we find the component's definition line, replace the component name
+                # If the bus is not found and we encounter a new component block, exit this block
+                if "New" in line and not line.startswith(f"New {component_type.capitalize()}") and not bus_found:
+                    in_component = False
+                    print("Exiting component block: Bus not found for this component.")
+                    continue
+
+                # If the component name line is found, replace the name
                 if f"New {component_type.capitalize()}." in line:
                     component_name = line.split('.')[1].strip()
                     updated_name = component_id
                     print(f"Replacing component name: {component_name} with {updated_name}")
-                    line = line.replace(component_name, updated_name)  # Replace with new ID
-                    print(f"Updated component name from {component_name} to {updated_name}")
+                    line = line.replace(component_name, updated_name)
 
-                # Update parameters if they exist in the line
+                # Update parameters in the lines
                 for key, value in parameters.items():
                     if key in line:
                         line = update_line_parameter(line, key, value)
                         print(f"Updated parameter: {key} = {value}")
 
-            # Stop looking for the component once we exit the component's block
-            if in_component and "New" in line and not line.startswith(f"New {component_type.capitalize()}"):
-                in_component = False
-                bus_found = False  # Reset bus found when exiting the component
-
             updated_lines.append(line)
 
-        # After updating, write the changes back to the file
+        # Write updated lines back to the file
         with open(local_file, "w") as file:
             file.writelines(updated_lines)
             print(f"Updated lines after changes: {updated_lines[:21]}")
 
-        # Upload the updated file to S3
+        # Upload updated file to S3
         new_dss_file_key = f"Trial2_Functional_Circuit_{int(time.time())}.py"
         print(f"Uploading updated file to S3: {new_dss_file_key}")
         s3_client.upload_file(local_file, BUCKET_NAME, new_dss_file_key)
