@@ -34,6 +34,10 @@ s3_client = boto3.client(
     region_name=AWS_REGION
 )
 
+@app.route('/')
+def home():
+    return jsonify({"message": "Flask app is running"})
+
 # Write data to MySQL table
 #@app.route('/send-data', methods=['POST'])
 #def send_data():
