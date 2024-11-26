@@ -140,15 +140,21 @@ def update_line_parameter(line, key, value):
     return line
 
 # Modify OpenDSS file based on geolocation and parameters
+# Modify OpenDSS file based on geolocation and parameters
 @app.route('/modify_component', methods=['POST'])
 def modify_component():
     try:
-        # Step 1: Parse input data
         data = request.json
+        print(f"Received data: {data}")
         component_type = data.get("component_type")
         geolocation = data.get("geolocation")
         parameters = data.get("parameters")
         component_id = data.get("component_id")
+
+        print(f"Component Type: {component_type}")
+        print(f"Component ID: {component_id}")
+        print(f"Geolocation: {geolocation}")
+        print(f"Parameters: {parameters}")
 
         if not component_type or not geolocation or not parameters or not component_id:
             return jsonify({"error": "Invalid payload"}), 400
@@ -156,32 +162,40 @@ def modify_component():
         if not geolocation or len(geolocation) != 2:
             return jsonify({"error": "Invalid geolocation. Expected a tuple (x, y)."}), 400
 
-        # Step 2: Load bus coordinates from S3
+        # Load bus coordinates from S3
         bus_coords = load_bus_coordinates_from_s3()
         closest_bus = find_closest_bus(bus_coords, geolocation)
+        print(f"Closest bus found: {closest_bus}")
         if not closest_bus:
             return jsonify({"error": f"No matching bus found for the geolocation {geolocation}"}), 404
 
-        # Step 3: Download the OpenDSS file from S3
         local_file = "/tmp/temp_dss_file.py"
         s3_client.download_file(BUCKET_NAME, DSS_FILE_KEY, local_file)
 
-        # Read the OpenDSS file
         with open(local_file, "r") as file:
             lines = file.readlines()
+            print(f"Initial lines from DSS file: {lines[:21]}")
 
         updated_lines = []
-        component_updated = False
+        in_component = False
+        bus_found = False
+        component_updated = False  # Track if the component name has been updated
 
-        # Step 4: Process lines in the OpenDSS file
-        for line in lines:
-            # Check for the component declaration line
+        # Start iterating through the lines
+        for i, line in enumerate(lines):
+            # Debugging print: Track every line processed
+            print(f"Processing line {i}: {line.strip()}")
+
+            # Check if the line contains the component we want to update
             if f"New {component_type.capitalize()}" in line and not component_updated:
                 print(f"Found {component_type} line: {line.strip()}")
-                current_component_name = line.split()[1]  # Extract current component name
+                # Extract the component name part (e.g., "Transformer.SubXF" or "Transformer.XFM1")
+                component_name_parts = line.split()
+                current_component_name = component_name_parts[1]  # The second element should be the component name
                 print(f"Current component name: {current_component_name}")
 
                 if f"bus={closest_bus}" in line:
+                    # Replace the component name part with the new component_id
                     updated_line = line.replace(current_component_name.split('.')[-1], component_id)
                     print(f"Updated line with new component name: {updated_line.strip()}")
                     updated_lines.append(updated_line)
@@ -205,21 +219,24 @@ def modify_component():
             else:
                 updated_lines.append(line)
 
-        # Step 7: Print the first 21 lines of the updated file
-        print("First 21 lines of the updated file:")
-        print("".join(updated_lines[:21]))  # Print the first 21 lines
+        # Final verification: Check the updated lines after the loop
+        print(f"Updated lines verification:\n{updated_lines[:21]}")
 
-        # Step 8: Write the updated lines back to the local file
+        # Write the updated lines back to the local file
         with open(local_file, "w") as file:
             file.writelines(updated_lines)
+            print(f"Final updated lines written to file: {updated_lines[:21]}")
 
-        # Step 9: Upload the updated file to S3
+        # Upload the updated file to S3
         new_dss_file_key = f"Trial2_Functional_Circuit_{int(time.time())}.py"
+        print(f"Uploading updated file to S3: {new_dss_file_key}")
         s3_client.upload_file(local_file, BUCKET_NAME, new_dss_file_key)
+        print(f"File successfully uploaded to S3: {new_dss_file_key}")
 
         return jsonify({"message": "Component updated successfully.", "new_file": new_dss_file_key}), 200
 
     except Exception as e:
+        print(f"Error: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
