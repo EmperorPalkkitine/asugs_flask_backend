@@ -177,31 +177,38 @@ def modify_component():
 
         updated_lines = []
         in_component = False
+        bus_found = False
 
-        for line in lines:
-            # Check for component type and bus association, ensuring proper matches for both
-            if f"New {component_type.capitalize()}" in line and f"bus={closest_bus}" in line:
+        for i, line in enumerate(lines):
+            if f"New {component_type.capitalize()}" in line:
                 in_component = True
                 print(f"Component found: {line}")
-
+            
             if in_component:
+                # Look for the line with bus info (it can be on the following lines)
+                if f"bus={closest_bus}" in line:
+                    bus_found = True
+                    print(f"Bus found: {line}")
+
+                # If the component's bus line has been found, update the component name and parameters
+                if bus_found:
+                    if f"New {component_type.capitalize()}." in line:
+                        component_name = line.split('.')[1].strip()
+                        updated_name = component_id
+                        print(f"Replacing component name: {component_name} with {updated_name}")
+                        line = line.replace(component_name, updated_name)
+                        print(f"Updated component name from {component_name} to {updated_name}")
+
+                    # Update parameters if they exist in the line
+                    for key, value in parameters.items():
+                        if key in line:
+                            line = update_line_parameter(line, key, value)
+                            print(f"Updated parameter: {key} = {value}")
+                
+                # Stop looking for the component once we exit the component's block
                 if "New" in line and not line.startswith(f"New {component_type.capitalize()}"):
                     in_component = False
-
-            if in_component:
-                # Replace component name if a match is found
-                if f"New {component_type.capitalize()}." in line:
-                    component_name = line.split('.')[1].strip()
-                    updated_name = component_id
-                    print(f"Replacing component name: {component_name} with {updated_name}")
-                    line = line.replace(component_name, updated_name)
-                    print(f"Updated component name from {component_name} to {updated_name}")
-
-                # Update parameters if they exist in the line
-                for key, value in parameters.items():
-                    if key in line:
-                        line = update_line_parameter(line, key, value)
-                        print(f"Updated parameter: {key} = {value}")
+                    bus_found = False  # Reset bus found when exiting the component
 
             updated_lines.append(line)
 
@@ -219,6 +226,6 @@ def modify_component():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
+
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000)
