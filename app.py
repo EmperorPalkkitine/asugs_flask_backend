@@ -181,9 +181,10 @@ def modify_component():
         component_updated = False  # Track if the component name has been updated
 
         for i, line in enumerate(lines):
-            # Verification: Check if the line is added to updated_lines correctly
+            # Debugging print: Track every line processed
             print(f"Processing line {i}: {line.strip()}")
 
+            # Start processing the specific component
             if f"New {component_type.capitalize()}" in line:
                 in_component = True
                 print(f"Component found: {line.strip()}")
