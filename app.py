@@ -200,16 +200,13 @@ def modify_component():
                     print(f"Bus found: {line.strip()}")
 
                 if bus_found and not component_updated:
-                    # Replace the component name in the initial declaration
-                    if f"New {component_type.capitalize()}" in lines[component_start_index]:
-                        updated_line = lines[component_start_index].replace(
-                            current_component_name.split('.')[-1], component_id
-                        )
-                        print(f"Updated component name at line {component_start_index}: {updated_line.strip()}")
-                        updated_lines.append(updated_line)  # Ensure this updated line gets appended here
-                        component_updated = True  # Mark as updated
-                    else:
-                        updated_lines.append(line)  # If no change needed, just append the line
+                    # Remove the old component line and add the updated component name line
+                    updated_line = lines[component_start_index].replace(
+                        current_component_name.split('.')[-1], component_id
+                    )
+                    print(f"Updated component name at line {component_start_index}: {updated_line.strip()}")
+                    updated_lines.append(updated_line)  # Append the updated line to the list
+                    component_updated = True  # Mark as updated
 
                 # Update parameters in the line
                 for key, value in parameters.items():
@@ -217,8 +214,8 @@ def modify_component():
                         line = update_line_parameter(line, key, value)
                         print(f"Updated parameter: {key} = {value}")
                 
-                # Ensure the modified line gets appended even after updating parameters
-                updated_lines.append(line)  # Make sure the line is appended after all changes
+                # Append the modified line to updated_lines after all changes
+                updated_lines.append(line)  # Ensure the line is appended after all changes
 
             # Exit the block when encountering a new component or unrelated line
             if in_component and "New" in line and i != component_start_index:
