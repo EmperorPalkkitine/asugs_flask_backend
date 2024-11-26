@@ -140,7 +140,6 @@ def update_line_parameter(line, key, value):
     return line
 
 # Modify OpenDSS file based on geolocation and parameters
-# Modify OpenDSS file based on geolocation and parameters
 @app.route('/modify_component', methods=['POST'])
 def modify_component():
     try:
@@ -181,42 +180,52 @@ def modify_component():
         bus_found = False
         component_updated = False  # Track if the component name has been updated
 
-        # Start iterating through the lines
         for i, line in enumerate(lines):
             # Debugging print: Track every line processed
             print(f"Processing line {i}: {line.strip()}")
 
-            # Check if the line contains the component we want to update
-            if f"New {component_type.capitalize()}" in line and not component_updated:
-                print(f"Found {component_type} line: {line.strip()}")
-                # Extract the component name part (e.g., "Transformer.SubXF" or "Transformer.XFM1")
-                component_name_parts = line.split()
-                current_component_name = component_name_parts[1]  # The second element should be the component name
-                print(f"Current component name: {current_component_name}")
+            # Start processing the specific component
+            if f"New {component_type.capitalize()}" in line:
+                in_component = True
+                print(f"Component found: {line.strip()}")
+                component_start_index = i
+                # Extract the current component name (after "New")
+                current_component_name = line.split()[1]
+                print(f"Component name identified: {current_component_name}")
 
+            if in_component:
+                print(f"Processing line within component block: {line.strip()}")
                 if f"bus={closest_bus}" in line:
-                    # Replace the component name part with the new component_id
-                    updated_line = line.replace(current_component_name.split('.')[-1], component_id)
-                    print(f"Updated line with new component name: {updated_line.strip()}")
-                    updated_lines.append(updated_line)
-                    component_updated = True
-                    continue
-                else:
-                    updated_lines.append(line)
-                    continue
+                    bus_found = True
+                    print(f"Bus found: {line.strip()}")
 
-            # Step 6: Process parameters for the component if it's associated with the closest bus
-            if component_updated and f"bus={closest_bus}" in line:
+                if bus_found and not component_updated:
+                    # Remove the old component line and add the updated component name line
+                    updated_line = lines[component_start_index].replace(
+                        current_component_name.split('.')[-1], component_id
+                    )
+                    print(f"Updated component name at line {component_start_index}: {updated_line.strip()}")
+                    updated_lines.append(updated_line)  # Append the updated line to the list
+                    component_updated = True  # Mark as updated
+
+                # Update parameters in the line
                 for key, value in parameters.items():
-                    if key != 'bus':  # Exclude the bus parameter
-                        if key in line:
-                            print(f"Updating {key} to {value} in line: {line.strip()}")
-                            line = update_line_parameter(line, key, value)
-                            print(f"Updated line: {line.strip()}")
-                updated_lines.append(line)
+                    if key in line:
+                        line = update_line_parameter(line, key, value)
+                        print(f"Updated parameter: {key} = {value}")
+                
+                # Append the modified line to updated_lines after all changes
+                updated_lines.append(line)  # Ensure the line is appended after all changes
 
-            # Otherwise, keep the line unchanged
-            else:
+            # Exit the block when encountering a new component or unrelated line
+            if in_component and "New" in line and i != component_start_index:
+                print(f"Exiting component block at line {i}: {line.strip()}")
+                in_component = False
+                bus_found = False
+                component_updated = False
+
+            # Append the line if it’s not part of the component block
+            if not in_component:
                 updated_lines.append(line)
 
         # Final verification: Check the updated lines after the loop
