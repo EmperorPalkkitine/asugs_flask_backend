@@ -187,7 +187,7 @@ def modify_component():
                 print(f"Component found: {line}")
 
             if in_component:
-                # Look ahead for the closest bus in the subsequent lines
+                # Check if the current line or subsequent lines contain the closest bus
                 if f"bus={closest_bus}" in line:
                     bus_found = True
                     print(f"Bus found: {line}")
@@ -206,8 +206,8 @@ def modify_component():
                             line = update_line_parameter(line, key, value)
                             print(f"Updated parameter: {key} = {value}")
 
-            # Stop processing the block if another "New" component line starts
-            if in_component and "New" in line and not line.startswith(f"New {component_type.capitalize()}"):
+            # Stop processing the block if another "New" component line starts and we haven't found the bus
+            if in_component and "New" in line and i != component_start_index:
                 if not bus_found:
                     print(f"No matching bus found for component starting at line {component_start_index}.")
                 in_component = False  # Exit the component block
