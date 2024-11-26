@@ -130,11 +130,11 @@ def find_closest_bus(bus_coords, target_location):
 
 # Update parameters in a specific line
 def update_line_parameter(line, key, value):
-    if f"{key}=" in line:
+    if f"{key.casefold()}=" in line:
         parts = line.split()
         for i, part in enumerate(parts):
-            if part.startswith(f"{key}="):
-                parts[i] = f"{key}={value}"
+            if part.startswith(f"{key.casefold()}="):
+                parts[i] = f"{key.lower()}={value}"
         line = " ".join(parts)
         print(f"Updated line: {line}")
     return line
@@ -205,17 +205,17 @@ def modify_component():
                     )
                     print(f"Updated component name at line {component_start_index}: {updated_line.strip()}")
                     updated_lines[component_start_index] = updated_line
-                    component_updated = True
                     print(f"Component lines to update: {updated_lines}")
 
-                # Update parameters in the line if any match
-                for key, value in parameters.items():
-                    if key in line:
-                        line = update_line_parameter(line, key, value)
-                        print(f"Updated parameter: {key} = {value}")
+                 # Update parameters in the line if any match
+                    for key, value in parameters.items():
+                        if key.casefold() in line:
+                            line = update_line_parameter(line, key, value)
+                            print(f"Updated parameter: {key.casefold()} = {value}")
                 
-                        component_lines_to_update.append(line)
-                        print(f"Component lines to update: {component_lines_to_update}")
+                            component_lines_to_update.append(line)
+                            print(f"Component lines to update: {component_lines_to_update}")
+                    component_updated = True
 
             # Exit the block when encountering a blank line
             if in_component and line.strip() == "":
