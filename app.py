@@ -177,28 +177,28 @@ def modify_component():
         for line in lines:
             # Check for the component declaration line
             if f"New {component_type.capitalize()}" in line and not component_updated:
-                current_component_name = line.split()[1]  # Extract the current component name (e.g., Transformer.XFM1)
-                
-                # Step 5: Check if the component is associated with the closest bus
+                print(f"Found {component_type} line: {line.strip()}")
+                current_component_name = line.split()[1]  # Extract current component name
+                print(f"Current component name: {current_component_name}")
+
                 if f"bus={closest_bus}" in line:
-                    # Replace the component name with the new component ID
                     updated_line = line.replace(current_component_name.split('.')[-1], component_id)
-                    updated_lines.append(updated_line)  # Append the updated line
-                    component_updated = True  # Mark as updated
-                    continue  # Skip adding the original line
-                
+                    print(f"Updated line with new component name: {updated_line.strip()}")
+                    updated_lines.append(updated_line)
+                    component_updated = True
+                    continue
                 else:
-                    # If the component is not linked to the closest bus, keep the line unchanged
                     updated_lines.append(line)
                     continue
 
             # Step 6: Process parameters for the component if it's associated with the closest bus
             if component_updated and f"bus={closest_bus}" in line:
-                # Update parameters (excluding the bus parameter)
                 for key, value in parameters.items():
-                    if key != 'bus':  # Exclude bus parameter
+                    if key != 'bus':  # Exclude the bus parameter
                         if key in line:
-                            line = update_line_parameter(line, key, value)  # Update the line
+                            print(f"Updating {key} to {value} in line: {line.strip()}")
+                            line = update_line_parameter(line, key, value)
+                            print(f"Updated line: {line.strip()}")
                 updated_lines.append(line)
 
             # Otherwise, keep the line unchanged
