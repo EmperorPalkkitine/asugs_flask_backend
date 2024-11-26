@@ -178,29 +178,33 @@ def modify_component():
         updated_lines = []
         in_component = False
         bus_found = False
-        component_start_index = None
+        current_component_name = None
 
         # Iterate over each line
         for i, line in enumerate(lines):
-            # Check for the start of the component block
+            # Look for a component block (e.g., "New Transformer" or "New Capacitor")
             if f"New {component_type.capitalize()}" in line:
                 in_component = True
                 print(f"Component found: {line}")
-                component_start_index = i  # Mark where the component starts
+                current_component_name = line.split()[1]  # Extract the current component name
+                component_start_index = i  # Mark where the component begins
+                print(f"Component name identified: {current_component_name}")
 
             if in_component:
-                # Check if the current line contains the bus info
+                # Check if the bus parameter appears in the following lines
                 if f"bus={closest_bus}" in line:
                     bus_found = True
                     print(f"Bus found: {line}")
 
-                # When we find the component's definition line, replace the component name
-                if f"New {component_type.capitalize()}." in line:
-                    component_name = line.split('.')[1].strip()
-                    updated_name = component_id
-                    print(f"Replacing component name: {component_name} with {updated_name}")
-                    line = line.replace(component_name, updated_name)  # Replace with new ID
-                    print(f"Updated component name from {component_name} to {updated_name}")
+                # Replace the component name dynamically if the bus matches
+                if f"New {component_type.capitalize()}" in line:
+                    if bus_found:
+                        updated_name = component_id
+                        print(f"Replacing component name: {line.strip()} with {updated_name}")
+                        line = line.replace(current_component_name, updated_name)  # Replace the dynamic component name
+                        print(f"Updated component name from {current_component_name} to {updated_name}")
+                    else:
+                        print(f"No matching bus found for component starting at line {component_start_index}")
 
                 # Update parameters if they exist in the line
                 for key, value in parameters.items():
@@ -208,12 +212,11 @@ def modify_component():
                         line = update_line_parameter(line, key, value)
                         print(f"Updated parameter: {key} = {value}")
 
-            # Continue looking until we exit the component block
+            # Stop looking for the component once we exit the component's block
             if in_component and "New" in line and not line.startswith(f"New {component_type.capitalize()}"):
-                if not bus_found:
-                    print(f"No matching bus found for component starting at line {component_start_index}")
                 in_component = False
                 bus_found = False  # Reset bus found when exiting the component
+                current_component_name = None
 
             updated_lines.append(line)
 
