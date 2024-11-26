@@ -185,11 +185,13 @@ def modify_component():
             if f"New {component_type.capitalize()}" in line:
                 in_component = True
                 print(f"Component found: {line}")
+                print(f"in_component: {in_component}")
                 current_component_name = line.split()[1]  # Extract the current component name
                 component_start_index = i  # Mark where the component begins
                 print(f"Component name identified: {current_component_name}")
 
             if in_component:
+                print(f"Processing line within component block: {line.strip()}")
                 # Look ahead to check if the bus parameter appears in the following lines
                 if f"bus={closest_bus}" in line:
                     bus_found = True
