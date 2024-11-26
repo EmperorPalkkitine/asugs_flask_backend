@@ -201,17 +201,23 @@ def modify_component():
                 if bus_found and not component_updated:
                     # Replace the component name in the initial declaration
                     if f"New {component_type.capitalize()}" in lines[component_start_index]:
-                        lines[component_start_index] = lines[component_start_index].replace(
+                        updated_line = lines[component_start_index].replace(
                             current_component_name.split('.')[-1], component_id
                         )
-                        print(f"Updated component name at line {component_start_index}: {lines[component_start_index].strip()}")
-                    component_updated = True  # Mark as updated
+                        print(f"Updated component name at line {component_start_index}: {updated_line.strip()}")
+                        updated_lines.append(updated_line)  # Append updated line here
+                        component_updated = True  # Mark as updated
+                    else:
+                        updated_lines.append(line)  # If no change needed, just append the line
 
-                # Update parameters
+                # Update parameters in the line
                 for key, value in parameters.items():
                     if key in line:
                         line = update_line_parameter(line, key, value)
                         print(f"Updated parameter: {key} = {value}")
+                
+                # Append the modified line to updated_lines after all changes
+                updated_lines.append(line)
 
             # Exit the block when encountering a new component or unrelated line
             if in_component and "New" in line and i != component_start_index:
@@ -220,11 +226,9 @@ def modify_component():
                 bus_found = False
                 component_updated = False
 
-            updated_lines.append(line)
-
-            # Verification: Confirm line was correctly added to updated_lines
-            if len(updated_lines) <= i or updated_lines[-1] != line:
-                print(f"ERROR: Line not appended correctly at index {i}!")
+            # Append the line if it’s not part of the component block
+            if not in_component:
+                updated_lines.append(line)
 
         # Final verification: Check the updated lines after the loop
         print(f"Updated lines verification:\n{updated_lines[:21]}")
