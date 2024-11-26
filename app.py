@@ -200,12 +200,12 @@ def modify_component():
                     print(f"Bus found: {line.strip()}")
 
                 if bus_found and not component_updated:
-                    # Remove the old component name line and add the updated one
+                    # Replace the old component name with the new component ID
                     updated_line = lines[component_start_index].replace(
                         current_component_name.split('.')[-1], component_id
                     )
                     print(f"Updated component name at line {component_start_index}: {updated_line.strip()}")
-                    updated_lines.append(updated_line)  # Append the updated line
+                    lines[component_start_index] = updated_line  # Directly replace the line in the list
                     component_updated = True  # Mark as updated
 
                 # Update parameters in the line
