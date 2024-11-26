@@ -150,6 +150,11 @@ def modify_component():
         parameters = data.get("parameters")
         component_id = data.get("component_id")
 
+        print(f"Component Type: {component_type}")
+        print(f"Component ID: {component_id}")
+        print(f"Geolocation: {geolocation}")
+        print(f"Parameters: {parameters}")
+
         if not component_type or not geolocation or not parameters or not component_id:
             return jsonify({"error": "Invalid payload"}), 400
         
@@ -167,6 +172,7 @@ def modify_component():
 
         with open(local_file, "r") as file:
             lines = file.readlines()
+            print(f"Initial lines from DSS file: {lines[:21]}")
 
         updated_lines = []
         in_component = False
@@ -184,6 +190,7 @@ def modify_component():
                 if f"New {component_type.capitalize()}." in line:
                     component_name = line.split('.')[1].strip()
                     updated_name = component_id
+                    print(f"Replacing component name: {component_name} with {updated_name}")
                     line = line.replace(component_name, updated_name)
                     print(f"Updated component name from {component_name} to {updated_name}")
 
@@ -196,8 +203,11 @@ def modify_component():
 
         with open(local_file, "w") as file:
             file.writelines(updated_lines)
+            print(f"Updated lines after changes: {updated_lines[:21]}")
 
+        print(f"Uploading updated file to S3: {new_dss_file_key}")
         s3_client.upload_file(local_file, BUCKET_NAME, new_dss_file_key)
+        print(f"File successfully uploaded to S3: {new_dss_file_key}")
 
         return jsonify({"message": "Component updated successfully.", "new_file": new_dss_file_key}), 200
 
