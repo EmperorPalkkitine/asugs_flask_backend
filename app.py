@@ -4,6 +4,8 @@ import mysql.connector
 import boto3
 import os
 import time
+import csv
+import math
 
 app = Flask(__name__)
 CORS(app)
@@ -23,7 +25,8 @@ AWS_ACCESS_KEY = "AKIA6IY36CBZOBK5V3HO"
 AWS_SECRET_KEY = "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"
 AWS_REGION = "us-east-2"
 BUCKET_NAME = "gridscout"
-DSS_FILE_KEY = "Trial2_Functional_Circuit.py" # Key to the OpenDSS .py file in the bucket
+DSS_FILE_KEY = "Trial2_Functional_Circuit.py"  # Key to the OpenDSS .py file in the bucket
+CSV_FILE_KEY = "IEEE37_BusXY.csv" # Key to bus coord CSV file in s3 bucket
 new_dss_file_key = f"Trial2_Functional_Circuit_{int(time.time())}.py"
 
 # S3 Client Initialization
@@ -38,56 +41,15 @@ s3_client = boto3.client(
 def home():
     return jsonify({"message": "Flask app is running"})
 
-# Write data to MySQL table
-#@app.route('/send-data', methods=['POST'])
-#def send_data():
-#    try:
-#        data = request.json
-#        component_id = data.get('component_id')
-#        component_type = data.get('component_type')
-#        electrical_specifications = data.get('electrical_specifications')
-#        connection_points = data.get('connection_points')
-#        geolocation = data.get('geolocation')
-#        installation_date = data.get('installation_date')
-#        operation_status = data.get('operation_status')
-#        der = data.get('der')
-#
-        # SQL query to insert data into the table
-#        insert_query = """
-#            INSERT INTO ParameterTests 
-#            (component_id, component_type, electrical_specifications, connection_points, geolocation, installation_date, operation_status, der)
-#            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-#        """
-#        cursor.execute(insert_query, (
-#            component_id, component_type, electrical_specifications,
-#            connection_points, geolocation, installation_date,
-#            operation_status, der
-#        ))
-#        db.commit()
-#
-#        return jsonify({"message": "Data inserted successfully"}), 201
-#    except mysql.connector.Error as err:
-#        print(f"Database Error: {err}")
-#        return jsonify({"error": str(err)}), 500
-#    except Exception as e:
-#        print(f"Unexpected error: {e}")
-#        return jsonify({"error": "An unexpected error occurred"}), 500
-
-
-# Get data from MySQL table
+# Retrieve component data from MySQL
 @app.route('/get_data/<component_id>', methods=['GET'])
 def get_data(component_id):
     try:
-        # Retrieve component type and ID from query parameters
         component_type = request.args.get('component_type')
-
-        print(f"Component Type (from query string): {component_type}")
-        print(f"Component ID: {component_id}")
 
         if not component_type or not component_id:
             return jsonify({"error": "Component type and ID are required"}), 400
 
-        # Map component types to their respective table names and required columns
         table_mapping = {
             'Transformer': {
                 'table': 'transformers',
@@ -113,108 +75,128 @@ def get_data(component_id):
 
         table_name = component_info['table']
         required_columns = component_info['columns']
-
-        # Construct SQL query to fetch only the required columns
         columns_str = ', '.join(required_columns)
         query = f"SELECT {columns_str} FROM {table_name} WHERE Equipment_ID = %s"
-        cursor.execute(query, (component_id,))
-        result = cursor.fetchone()
+
+        try:
+            cursor.execute(query, (component_id,))
+            result = cursor.fetchone()
+        except mysql.connector.Error as err:
+            return jsonify({"error": f"MySQL query error: {str(err)}"}), 500
 
         if not result:
             return jsonify({"error": "Component not found"}), 404
 
-        # Map results to a dictionary
         data = dict(zip(required_columns, result))
         return jsonify(data), 200
 
-    except mysql.connector.Error as err:
-        print(f"Database Error: {err}")
-        return jsonify({"error": str(err)}), 500
     except Exception as e:
-        print(f"Unexpected error: {e}")
-        return jsonify({"error": "An unexpected error occurred"}), 500
+        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
 
 
-# Modify the OpenDSS .py file based on the given input
+# Load bus coordinates from the CSV file in S3
+def load_bus_coordinates_from_s3():
+    local_csv_file = "/tmp/bus_coords.csv"
+    
+    try:
+        s3_client.download_file(BUCKET_NAME, CSV_FILE_KEY, local_csv_file)
+    except boto3.exceptions.S3DownloadError as e:
+        return jsonify({"error": f"S3 download error: {str(e)}"}), 500
+    except Exception as e:
+        return jsonify({"error": f"Unexpected error while downloading file from S3: {str(e)}"}), 500
+
+    bus_coords = {}
+    with open(local_csv_file, "r") as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            bus_coords[row["Bus"]] = (float(row["X"]), float(row["Y"]))
+
+    return bus_coords
+
+# Find the closest bus to a given geolocation
+def find_closest_bus(bus_coords, target_location):
+    target_x, target_y = target_location
+    closest_bus = None
+    min_distance = float("inf")
+
+    for bus, (x, y) in bus_coords.items():
+        distance = math.sqrt((x - target_x) ** 2 + (y - target_y) ** 2)
+        if distance < min_distance:
+            min_distance = distance
+            closest_bus = bus
+
+    return closest_bus
+
+# Update parameters in a specific line
+def update_line_parameter(line, key, value):
+    if f"{key}=" in line:
+        parts = line.split()
+        for i, part in enumerate(parts):
+            if part.startswith(f"{key}="):
+                parts[i] = f"{key}={value}"
+        line = " ".join(parts)
+    return line
+
+# Modify OpenDSS file based on geolocation and parameters
 @app.route('/modify_component', methods=['POST'])
 def modify_component():
-    """
-    API to modify components in the OpenDSS .py file based on user input.
-    Example payload:
-    {
-        "component_type": "line",
-        "component_name": "L1",
-        "parameters": {
-            "length": 1.2,
-            "linecode": "updated_code"
-        }
-    }
-    """
-    data = request.json
-    component_type = data.get("component_type")
-    component_name = data.get("component_name")
-    parameters = data.get("parameters")
+    try:
+        data = request.json
+        component_type = data.get("component_type")
+        geolocation = data.get("geolocation")
+        parameters = data.get("parameters")
+        component_id = data.get("component_id")
 
-    if not component_type or not component_name or not parameters:
-        return jsonify({"error": "Invalid payload"}), 400
-
-    # Download the .py file from S3
-    local_file = "/tmp/temp_dss_file.py"
-    s3_client.download_file(BUCKET_NAME, DSS_FILE_KEY, local_file)
-
-    # Modify the file
-    with open(local_file, "r") as file:
-        lines = file.readlines()
-
-    updated_lines = modify_dss_file(lines, component_type, component_name, parameters)
-
-    # Write the updated content back to the file
-    with open(local_file, "w") as file:
-        file.writelines(updated_lines)
-
-    # Upload the updated file back to S3
-    s3_client.upload_file(local_file, BUCKET_NAME, new_dss_file_key)
-
-    return jsonify({"message": "Component updated successfully."}), 200
-
-
-def modify_dss_file(lines, component_type, component_name, parameters):
-    """
-    Modify the OpenDSS .py file lines to update the specified component.
-    """
-    updated_lines = []
-    in_component = False
-
-    for line in lines:
-        if f"{component_type.capitalize()}.{component_name}" in line:
-            in_component = True
-
-        if in_component:
-            # Stop updating when we encounter an unrelated line
-            if "New" in line and f"{component_type.capitalize()}.{component_name}" not in line:
-                in_component = False
-
-        if in_component:
-            # Update parameters for the specified component
-            for key, value in parameters.items():
-                if key in line:
-                    line = update_line_parameter(line, key, value)
+        if not component_type or not geolocation or not parameters:
+            return jsonify({"error": "Invalid payload"}), 400
         
-        updated_lines.append(line)
+        if not geolocation or len(geolocation) != 2:
+            return jsonify({"error": "Invalid geolocation. Expected a tuple (x, y)."}), 400
 
-    return updated_lines
+        # Load bus coordinates from S3
+        bus_coords = load_bus_coordinates_from_s3()
+        closest_bus = find_closest_bus(bus_coords, geolocation)
+        if not closest_bus:
+            return jsonify({"error": f"No matching bus found for the geolocation {geolocation}"}), 404
 
+        local_file = "/tmp/temp_dss_file.py"
+        s3_client.download_file(BUCKET_NAME, DSS_FILE_KEY, local_file)
 
-def update_line_parameter(line, key, value):
-    """
-    Update a specific parameter in a line.
-    """
-    parts = line.split()
-    for i, part in enumerate(parts):
-        if key in part:
-            parts[i] = f"{key}={value}"
-    return " ".join(parts) + "\n"
+        with open(local_file, "r") as file:
+            lines = file.readlines()
 
+        updated_lines = []
+        in_component = False
+
+        for line in lines:
+            if f"New {component_type.capitalize()}" in line and f"Bus1={closest_bus}" in line:
+                in_component = True
+
+            if in_component:
+                if "New" in line and not line.startswith(f"New {component_type.capitalize()}"):
+                    in_component = False
+
+            if in_component:
+                if f"New {component_type.capitalize()}." in line:
+                    component_name = line.split('.')[1].strip()
+                    updated_name = component_id
+                    line = line.replace(component_name, updated_name)
+                    
+                for key, value in parameters.items():
+                    if key in line:
+                        line = update_line_parameter(line, key, value)
+
+            updated_lines.append(line)
+
+        with open(local_file, "w") as file:
+            file.writelines(updated_lines)
+
+        s3_client.upload_file(local_file, BUCKET_NAME, new_dss_file_key)
+
+        return jsonify({"message": "Component updated successfully.", "new_file": new_dss_file_key}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000)
