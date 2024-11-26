@@ -222,13 +222,6 @@ def modify_component():
                 bus_found = False
                 component_updated = False
 
-            # Append unchanged lines or lines outside of the component block
-            if not in_component:
-                updated_lines.append(line)
-
-        # Append the modified component block to the lines after all changes
-        updated_lines.extend(component_lines_to_update)
-
         print(f"Updated lines verification:\n{updated_lines[:21]}")
 
         # Write the updated lines back to the local file
