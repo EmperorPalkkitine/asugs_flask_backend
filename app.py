@@ -215,8 +215,8 @@ def modify_component():
                 
                 component_lines_to_update.append(line)
 
-            # Exit the block when encountering a new component or unrelated line
-            if in_component and "New" in line and i != component_start_index:
+            # Exit the block when encountering a blank line
+            if in_component and line.strip() == "":
                 print(f"Exiting component block at line {i}: {line.strip()}")
                 in_component = False
                 bus_found = False
