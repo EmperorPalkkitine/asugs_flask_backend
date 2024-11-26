@@ -204,9 +204,9 @@ def modify_component():
                         current_component_name.split('.')[-1], component_id
                     )
                     print(f"Updated component name at line {component_start_index}: {updated_line.strip()}")
-                    component_lines_to_update.append(updated_line)
+                    updated_lines[component_start_index] = updated_line
                     component_updated = True
-                    print(f"Component lines to update: {component_lines_to_update}")
+                    print(f"Component lines to update: {updated_lines}")
 
                 # Update parameters in the line if any match
                 for key, value in parameters.items():
@@ -224,7 +224,7 @@ def modify_component():
                 bus_found = False
                 component_updated = False
             
-            if in_component and not bus_found:
+            if in_component:
                 updated_lines.append(line)
                 print(f"Updated lines: {updated_lines}")
 
