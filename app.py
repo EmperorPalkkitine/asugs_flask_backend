@@ -76,7 +76,6 @@ def get_data(component_id):
     try:
         # Retrieve component type and ID from query parameters
         component_type = request.args.get('component_type')
-        component_id = request.args.get('component_id')
 
         if not component_type or not component_id:
             return jsonify({"error": "Component type and ID are required"}), 400
