@@ -178,45 +178,50 @@ def modify_component():
         updated_lines = []
         in_component = False
         bus_found = False
+        component_start_index = None
 
         for i, line in enumerate(lines):
             if f"New {component_type.capitalize()}" in line:
+                if in_component:
+                    # Exit the previous component block
+                    if not bus_found:
+                        print(f"No matching bus found for component starting at line {component_start_index}.")
+                    in_component = False
+                    bus_found = False
+
                 in_component = True
-                bus_found = False  # Reset bus_found for the new component
-                component_start_index = i  # Track the starting line of the component
+                component_start_index = i
                 print(f"Component found: {line}")
 
             if in_component:
-                # Check if the current line or subsequent lines contain the closest bus
+                # Check for the bus on subsequent lines
                 if f"bus={closest_bus}" in line:
                     bus_found = True
                     print(f"Bus found: {line}")
 
-                # Update component name only if it's the matching one
-                if bus_found and f"New {component_type.capitalize()}." in line:
+                # Update component name if the bus is found and the name line is reached
+                if f"New {component_type.capitalize()}." in line and bus_found:
                     component_name = line.split('.')[1].strip()
                     updated_name = component_id
                     print(f"Replacing component name: {component_name} with {updated_name}")
                     line = line.replace(component_name, updated_name)
 
-                # Update parameters within the matching component block
-                if bus_found:
-                    for key, value in parameters.items():
-                        if key in line:
-                            line = update_line_parameter(line, key, value)
-                            print(f"Updated parameter: {key} = {value}")
+                # Update parameters in the block
+                for key, value in parameters.items():
+                    if key in line:
+                        line = update_line_parameter(line, key, value)
+                        print(f"Updated parameter: {key} = {value}")
 
-            # Stop processing the block if another "New" component line starts and we haven't found the bus
-            if in_component and "New" in line and i != component_start_index:
+            # Stop processing the block if encountering a new "New" keyword for a different component
+            if in_component and "New" in line and not line.startswith(f"New {component_type.capitalize()}"):
                 if not bus_found:
                     print(f"No matching bus found for component starting at line {component_start_index}.")
-                in_component = False  # Exit the component block
-                bus_found = False  # Reset bus_found
+                in_component = False
+                bus_found = False
 
-            # Always append the line to the updated lines
             updated_lines.append(line)
 
-        # After updating, write the changes back to the file
+        # Write updated lines to the file
         with open(local_file, "w") as file:
             file.writelines(updated_lines)
             print(f"Updated lines after changes: {updated_lines[:21]}")
