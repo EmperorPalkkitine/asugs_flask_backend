@@ -214,6 +214,7 @@ def modify_component():
                         print(f"Updated parameter: {key} = {value}")
                 
                 component_lines_to_update.append(line)
+                print(f"Component lines to update: {component_lines_to_update}")
 
             # Exit the block when encountering a blank line
             if in_component and line.strip() == "":
