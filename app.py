@@ -81,7 +81,8 @@ def get_data(component_id):
         # Retrieve component type and ID from query parameters
         component_type = request.args.get('component_type')
 
-        print(f"Component Type: {component_type}")
+        print(f"Component Type (from query string): {component_type}")
+        print(f"Component ID: {component_id}")
 
         if not component_type or not component_id:
             return jsonify({"error": "Component type and ID are required"}), 400
@@ -106,7 +107,7 @@ def get_data(component_id):
             }
         }
 
-        component_info = table_mapping.get(component_type.lower())
+        component_info = table_mapping.get(component_type)
         if not component_info:
             return jsonify({"error": "Invalid component type"}), 400
 
