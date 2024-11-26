@@ -179,6 +179,7 @@ def modify_component():
         in_component = False
         bus_found = False
         component_updated = False  # Track if the component name has been updated
+        component_start_index = None
 
         for i, line in enumerate(lines):
             if f"New {component_type.capitalize()}" in line:
@@ -189,20 +190,19 @@ def modify_component():
                 current_component_name = line.split()[1]
                 print(f"Component name identified: {current_component_name}")
 
+                # Replace the component name in the declaration
+                if not component_updated:
+                    line = line.replace(
+                        current_component_name.split('.')[-1], component_id
+                    )
+                    print(f"Updated component name at line {i}: {line.strip()}")
+                    component_updated = True
+
             if in_component:
                 print(f"Processing line within component block: {line.strip()}")
                 if f"bus={closest_bus}" in line:
                     bus_found = True
                     print(f"Bus found: {line.strip()}")
-
-                if bus_found and not component_updated:
-                    # Replace the component name in the initial declaration
-                    if f"New {component_type.capitalize()}" in lines[component_start_index]:
-                        lines[component_start_index] = lines[component_start_index].replace(
-                            current_component_name.split('.')[-1], component_id
-                        )
-                        print(f"Updated component name at line {component_start_index}: {lines[component_start_index].strip()}")
-                    component_updated = True  # Mark as updated
 
                 # Update parameters
                 for key, value in parameters.items():
@@ -215,7 +215,6 @@ def modify_component():
                 print(f"Exiting component block at line {i}: {line.strip()}")
                 in_component = False
                 bus_found = False
-                component_updated = False
 
             updated_lines.append(line)
 
