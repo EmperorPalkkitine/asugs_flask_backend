@@ -157,7 +157,7 @@ def modify_component():
 
         if not component_type or not geolocation or not parameters or not component_id:
             return jsonify({"error": "Invalid payload"}), 400
-        
+
         if not geolocation or len(geolocation) != 2:
             return jsonify({"error": "Invalid geolocation. Expected a tuple (x, y)."}), 400
 
@@ -178,49 +178,48 @@ def modify_component():
         updated_lines = []
         in_component = False
         bus_found = False
-        component_updated = False  # To track if the component name has been updated
+        component_updated = False  # Track if the component name has been updated
 
-        # Iterate over each line
         for i, line in enumerate(lines):
             if f"New {component_type.capitalize()}" in line:
                 in_component = True
-                print(f"Component found: {line}")
-                print(f"in_component: {in_component}")
-                current_component_name = line.split()[1]  # Extract the current component name
-                component_start_index = i  # Mark where the component begins
+                print(f"Component found: {line.strip()}")
+                component_start_index = i
+                # Extract the current component name (after "New")
+                current_component_name = line.split()[1]
                 print(f"Component name identified: {current_component_name}")
 
             if in_component:
                 print(f"Processing line within component block: {line.strip()}")
-                # Look ahead to check if the bus parameter appears in the following lines
                 if f"bus={closest_bus}" in line:
                     bus_found = True
-                    print(f"Bus found: {line}")
+                    print(f"Bus found: {line.strip()}")
 
-                # Only update the component name once the bus is found
                 if bus_found and not component_updated:
-                    updated_name = component_id
-                    print(f"Replacing component name: {current_component_name} with {updated_name}")
-                    # Replace only the component name (not the whole line)
-                    line = line.replace(current_component_name.split('.')[-1], updated_name)
+                    # Replace the component name in the initial declaration
+                    if f"New {component_type.capitalize()}" in lines[component_start_index]:
+                        lines[component_start_index] = lines[component_start_index].replace(
+                            current_component_name.split('.')[-1], component_id
+                        )
+                        print(f"Updated component name at line {component_start_index}: {lines[component_start_index].strip()}")
                     component_updated = True  # Mark as updated
-                    print(f"Updated component name from {current_component_name} to {updated_name}")
 
-                # Update parameters if they exist in the line
+                # Update parameters
                 for key, value in parameters.items():
                     if key in line:
                         line = update_line_parameter(line, key, value)
                         print(f"Updated parameter: {key} = {value}")
 
-            # Stop looking for the component once we exit the component's block
-            if in_component and "New" in line and not line.startswith(f"New {component_type.capitalize()}"):
+            # Exit the block when encountering a new component or unrelated line
+            if in_component and "New" in line and i != component_start_index:
+                print(f"Exiting component block at line {i}: {line.strip()}")
                 in_component = False
-                bus_found = False  # Reset bus found when exiting the component
-                component_updated = False  # Reset component updated flag
+                bus_found = False
+                component_updated = False
 
             updated_lines.append(line)
 
-        # After updating, write the changes back to the file
+        # Write the updated lines back to the local file
         with open(local_file, "w") as file:
             file.writelines(updated_lines)
             print(f"Updated lines after changes: {updated_lines[:21]}")
@@ -234,6 +233,7 @@ def modify_component():
         return jsonify({"message": "Component updated successfully.", "new_file": new_dss_file_key}), 200
 
     except Exception as e:
+        print(f"Error: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
