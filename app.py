@@ -202,6 +202,7 @@ def modify_component():
                 if bus_found and not component_updated:
                     # Replace the component name in the initial declaration
                     if f"New {component_type.capitalize()}" in lines[component_start_index]:
+                        # Remove old component name and update with the new one
                         updated_line = lines[component_start_index].replace(
                             current_component_name.split('.')[-1], component_id
                         )
