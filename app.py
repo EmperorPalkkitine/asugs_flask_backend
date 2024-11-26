@@ -178,38 +178,48 @@ def modify_component():
             # Check for the component declaration line
             if f"New {component_type.capitalize()}" in line and not component_updated:
                 current_component_name = line.split()[1]  # Extract the current component name (e.g., Transformer.XFM1)
-                # Replace the name with the new component ID
-                updated_line = line.replace(current_component_name.split('.')[-1], component_id)
-                updated_lines.append(updated_line)
-                component_updated = True
-                continue  # Skip adding the original line
+                
+                # Step 5: Check if the component is associated with the closest bus
+                if f"bus={closest_bus}" in line:
+                    # Replace the component name with the new component ID
+                    updated_line = line.replace(current_component_name.split('.')[-1], component_id)
+                    updated_lines.append(updated_line)  # Append the updated line
+                    component_updated = True  # Mark as updated
+                    continue  # Skip adding the original line
+                
+                else:
+                    # If the component is not linked to the closest bus, keep the line unchanged
+                    updated_lines.append(line)
+                    continue
 
-            # If inside the component block, update parameters
-            if component_updated:
-                # Update the bus parameter
-                if "bus=" in line:
-                    line = update_line_parameter(line, "bus", closest_bus)
-                # Update other parameters
+            # Step 6: Process parameters for the component if it's associated with the closest bus
+            if component_updated and f"bus={closest_bus}" in line:
+                # Update parameters (excluding the bus parameter)
                 for key, value in parameters.items():
-                    if f"{key}=" in line:
-                        line = update_line_parameter(line, key, value)
+                    if key != 'bus':  # Exclude bus parameter
+                        if key in line:
+                            line = update_line_parameter(line, key, value)  # Update the line
+                updated_lines.append(line)
 
-            # Add the line to the updated list
-            updated_lines.append(line)
+            # Otherwise, keep the line unchanged
+            else:
+                updated_lines.append(line)
 
-        # Step 5: Write updated lines back to the local file
+        # Step 7: Print the first 21 lines of the updated file
+        print("First 21 lines of the updated file:")
+        print("".join(updated_lines[:21]))  # Print the first 21 lines
+
+        # Step 8: Write the updated lines back to the local file
         with open(local_file, "w") as file:
             file.writelines(updated_lines)
 
-        # Step 6: Upload the updated file to S3
+        # Step 9: Upload the updated file to S3
         new_dss_file_key = f"Trial2_Functional_Circuit_{int(time.time())}.py"
         s3_client.upload_file(local_file, BUCKET_NAME, new_dss_file_key)
 
         return jsonify({"message": "Component updated successfully.", "new_file": new_dss_file_key}), 200
 
     except Exception as e:
-        # Log and return the error
-        print(f"Error: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
