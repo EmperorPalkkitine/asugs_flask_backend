@@ -136,6 +136,7 @@ def update_line_parameter(line, key, value):
             if part.startswith(f"{key}="):
                 parts[i] = f"{key}={value}"
         line = " ".join(parts)
+        print(f"Updated line: {line}")
     return line
 
 # Modify OpenDSS file based on geolocation and parameters
@@ -149,7 +150,7 @@ def modify_component():
         parameters = data.get("parameters")
         component_id = data.get("component_id")
 
-        if not component_type or not geolocation or not parameters:
+        if not component_type or not geolocation or not parameters or not component_id:
             return jsonify({"error": "Invalid payload"}), 400
         
         if not geolocation or len(geolocation) != 2:
@@ -173,6 +174,7 @@ def modify_component():
         for line in lines:
             if f"New {component_type.capitalize()}" in line and f"Bus1={closest_bus}" in line:
                 in_component = True
+                print(f"Component found: {line}")
 
             if in_component:
                 if "New" in line and not line.startswith(f"New {component_type.capitalize()}"):
@@ -183,10 +185,12 @@ def modify_component():
                     component_name = line.split('.')[1].strip()
                     updated_name = component_id
                     line = line.replace(component_name, updated_name)
+                    print(f"Updated component name from {component_name} to {updated_name}")
 
                 for key, value in parameters.items():
                     if key in line:
                         line = update_line_parameter(line, key, value)
+                        print(f"Updated parameter: {key} = {value}")
 
             updated_lines.append(line)
 
