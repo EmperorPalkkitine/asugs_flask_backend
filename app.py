@@ -179,9 +179,9 @@ def modify_component():
         in_component = False
         bus_found = False
         component_updated = False  # Track if the component name has been updated
+        component_lines_to_update = []  # Store lines to be updated
 
         for i, line in enumerate(lines):
-            # Debugging print: Track every line processed
             print(f"Processing line {i}: {line.strip()}")
 
             # Start processing the specific component
@@ -189,7 +189,6 @@ def modify_component():
                 in_component = True
                 print(f"Component found: {line.strip()}")
                 component_start_index = i
-                # Extract the current component name (after "New")
                 current_component_name = line.split()[1]
                 print(f"Component name identified: {current_component_name}")
 
@@ -200,22 +199,21 @@ def modify_component():
                     print(f"Bus found: {line.strip()}")
 
                 if bus_found and not component_updated:
-                    # Remove the old component line and add the updated component name line
+                    # Update component name and add to updated lines
                     updated_line = lines[component_start_index].replace(
                         current_component_name.split('.')[-1], component_id
                     )
                     print(f"Updated component name at line {component_start_index}: {updated_line.strip()}")
-                    updated_lines.append(updated_line)  # Append the updated line to the list
-                    component_updated = True  # Mark as updated
+                    component_lines_to_update.append(updated_line)
+                    component_updated = True
 
-                # Update parameters in the line
+                # Update parameters in the line if any match
                 for key, value in parameters.items():
                     if key in line:
                         line = update_line_parameter(line, key, value)
                         print(f"Updated parameter: {key} = {value}")
                 
-                # Append the modified line to updated_lines after all changes
-                updated_lines.append(line)  # Ensure the line is appended after all changes
+                component_lines_to_update.append(line)
 
             # Exit the block when encountering a new component or unrelated line
             if in_component and "New" in line and i != component_start_index:
@@ -224,11 +222,13 @@ def modify_component():
                 bus_found = False
                 component_updated = False
 
-            # Append the line if it’s not part of the component block
+            # Append unchanged lines or lines outside of the component block
             if not in_component:
                 updated_lines.append(line)
 
-        # Final verification: Check the updated lines after the loop
+        # Append the modified component block to the lines after all changes
+        updated_lines.extend(component_lines_to_update)
+
         print(f"Updated lines verification:\n{updated_lines[:21]}")
 
         # Write the updated lines back to the local file
