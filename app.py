@@ -179,9 +179,11 @@ def modify_component():
         in_component = False
         bus_found = False
         component_updated = False  # Track if the component name has been updated
-        component_start_index = None
 
         for i, line in enumerate(lines):
+            # Verification: Check if the line is added to updated_lines correctly
+            print(f"Processing line {i}: {line.strip()}")
+
             if f"New {component_type.capitalize()}" in line:
                 in_component = True
                 print(f"Component found: {line.strip()}")
@@ -190,19 +192,20 @@ def modify_component():
                 current_component_name = line.split()[1]
                 print(f"Component name identified: {current_component_name}")
 
-                # Replace the component name in the declaration
-                if not component_updated:
-                    line = line.replace(
-                        current_component_name.split('.')[-1], component_id
-                    )
-                    print(f"Updated component name at line {i}: {line.strip()}")
-                    component_updated = True
-
             if in_component:
                 print(f"Processing line within component block: {line.strip()}")
                 if f"bus={closest_bus}" in line:
                     bus_found = True
                     print(f"Bus found: {line.strip()}")
+
+                if bus_found and not component_updated:
+                    # Replace the component name in the initial declaration
+                    if f"New {component_type.capitalize()}" in lines[component_start_index]:
+                        lines[component_start_index] = lines[component_start_index].replace(
+                            current_component_name.split('.')[-1], component_id
+                        )
+                        print(f"Updated component name at line {component_start_index}: {lines[component_start_index].strip()}")
+                    component_updated = True  # Mark as updated
 
                 # Update parameters
                 for key, value in parameters.items():
@@ -215,13 +218,21 @@ def modify_component():
                 print(f"Exiting component block at line {i}: {line.strip()}")
                 in_component = False
                 bus_found = False
+                component_updated = False
 
             updated_lines.append(line)
+
+            # Verification: Confirm line was correctly added to updated_lines
+            if len(updated_lines) <= i or updated_lines[-1] != line:
+                print(f"ERROR: Line not appended correctly at index {i}!")
+
+        # Final verification: Check the updated lines after the loop
+        print(f"Updated lines verification:\n{updated_lines[:21]}")
 
         # Write the updated lines back to the local file
         with open(local_file, "w") as file:
             file.writelines(updated_lines)
-            print(f"Updated lines after changes: {updated_lines[:21]}")
+            print(f"Final updated lines written to file: {updated_lines[:21]}")
 
         # Upload the updated file to S3
         new_dss_file_key = f"Trial2_Functional_Circuit_{int(time.time())}.py"
