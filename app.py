@@ -143,6 +143,7 @@ def update_line_parameter(line, key, value):
 def modify_component():
     try:
         data = request.json
+        print(f"Received data: {data}")
         component_type = data.get("component_type")
         geolocation = data.get("geolocation")
         parameters = data.get("parameters")
