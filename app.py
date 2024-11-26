@@ -107,9 +107,10 @@ def load_bus_coordinates_from_s3():
 
     bus_coords = {}
     with open(local_csv_file, "r") as csvfile:
-        reader = csv.DictReader(csvfile)
+        reader = csv.reader(csvfile)  # Use csv.reader instead of csv.DictReader
         for row in reader:
-            bus_coords[row["Bus"]] = (float(row["X"]), float(row["Y"]))
+            if len(row) >= 3:  # Check if there are enough columns
+                bus_coords[row[0]] = (float(row[1]), float(row[2]))  # Assuming columns are Bus, X, Y
 
     return bus_coords
 
