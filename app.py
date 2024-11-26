@@ -164,6 +164,7 @@ def modify_component():
         # Load bus coordinates from S3
         bus_coords = load_bus_coordinates_from_s3()
         closest_bus = find_closest_bus(bus_coords, geolocation)
+        print(f"Closest bus found: {closest_bus}")
         if not closest_bus:
             return jsonify({"error": f"No matching bus found for the geolocation {geolocation}"}), 404
 
@@ -178,7 +179,8 @@ def modify_component():
         in_component = False
 
         for line in lines:
-            if f"New {component_type.capitalize()}" in line and f"Bus1={closest_bus}" in line:
+            # Check for component type and bus association, ensuring proper matches for both
+            if f"New {component_type.capitalize()}" in line and f"bus={closest_bus}" in line:
                 in_component = True
                 print(f"Component found: {line}")
 
@@ -187,6 +189,7 @@ def modify_component():
                     in_component = False
 
             if in_component:
+                # Replace component name if a match is found
                 if f"New {component_type.capitalize()}." in line:
                     component_name = line.split('.')[1].strip()
                     updated_name = component_id
@@ -194,6 +197,7 @@ def modify_component():
                     line = line.replace(component_name, updated_name)
                     print(f"Updated component name from {component_name} to {updated_name}")
 
+                # Update parameters if they exist in the line
                 for key, value in parameters.items():
                     if key in line:
                         line = update_line_parameter(line, key, value)
@@ -201,10 +205,12 @@ def modify_component():
 
             updated_lines.append(line)
 
+        # Write the modified content back to the file
         with open(local_file, "w") as file:
             file.writelines(updated_lines)
             print(f"Updated lines after changes: {updated_lines[:21]}")
 
+        # Upload the updated file to S3 with a new key
         print(f"Uploading updated file to S3: {new_dss_file_key}")
         s3_client.upload_file(local_file, BUCKET_NAME, new_dss_file_key)
         print(f"File successfully uploaded to S3: {new_dss_file_key}")
@@ -213,6 +219,6 @@ def modify_component():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
+    
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000)
