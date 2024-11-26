@@ -21,9 +21,9 @@ db = mysql.connector.connect(
 cursor = db.cursor()
 
 # AWS S3 Configuration
-AWS_ACCESS_KEY = "AKIA6IY36CBZOBK5V3HO"
-AWS_SECRET_KEY = "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"
-AWS_REGION = "us-east-2"
+AWS_ACCESS_KEY = os.getenv('AWS_ACCESS_KEY_ID')
+AWS_SECRET_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
+AWS_REGION = os.getenv('AWS_REGION', 'us-east-2')
 BUCKET_NAME = "gridscout"
 DSS_FILE_KEY = "Trial2_Functional_Circuit.py"  # Key to the OpenDSS .py file in the bucket
 CSV_FILE_KEY = "IEEE37_BusXY.csv" # Key to bus coord CSV file in s3 bucket
@@ -181,7 +181,7 @@ def modify_component():
                     component_name = line.split('.')[1].strip()
                     updated_name = component_id
                     line = line.replace(component_name, updated_name)
-                    
+
                 for key, value in parameters.items():
                     if key in line:
                         line = update_line_parameter(line, key, value)
