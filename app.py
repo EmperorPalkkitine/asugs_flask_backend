@@ -210,7 +210,7 @@ def modify_component():
                  # Update parameters in the line if any match
                     if component_type == "Transformer":
                         parts = line.split()
-                        for j, part in enumerate(parts):
+                        for i, part in enumerate(parts):
                             if "=" in part:
                                 key, value = part.split("=")
                                 key_lower = key.lower()
