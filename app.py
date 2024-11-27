@@ -232,7 +232,6 @@ def modify_component():
             # Exit the block when encountering a blank line
             if in_component and line.strip() == "":
                 print(f"Exiting component block at line {i}: {line.strip()}")
-                updated_lines.append("\n")
                 in_component = False
                 bus_found = False
                 component_updated = False
@@ -257,7 +256,7 @@ def modify_component():
             print(f"Final updated lines written to file: {updated_lines[:22]}")
 
         # Upload the updated file to S3
-        new_dss_file_key = f"Trial2_Functional_Circuit_{int(time.time())}.py"
+        new_dss_file_key = f"Trial2_Functional_Circuit_{readable_timestamp}.py"
         print(f"Uploading updated file to S3: {new_dss_file_key}")
         s3_client.upload_file(local_file, BUCKET_NAME, new_dss_file_key)
         print(f"File successfully uploaded to S3: {new_dss_file_key}")
