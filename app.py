@@ -208,14 +208,21 @@ def modify_component():
                     print(f"Component lines to update: {updated_lines}")
 
                  # Update parameters in the line if any match
+                 if component_type == "Transformer":
                     for key, value in parameters.items():
-                        if key.casefold() in line:
-                            line = update_line_parameter(line, key, value)
-                            print(f"Updated parameter: {key.casefold()} = {value}")
-                
-                            component_lines_to_update.append(line)
-                            print(f"Component lines to update: {component_lines_to_update}")
-                    component_updated = True
+                        base_param = key[:-1]
+                        winding = key[-1]
+                        search_phrase = f"wdg={winding}"
+
+                        if search_phrase in line and base_param.lower() in line.lower():
+                            updated_parameter_line = re.sub(
+                                rf"({base_param.lower()}=)(\S+)",
+                                rf"\1{value}",
+                                line,
+                                flags=re.IGNORECASE
+                            )
+                            updated_lines.append(updated_parameter_line)
+                            print(f"Updated parameters: {updated_parameter_line}")
 
             # Exit the block when encountering a blank line
             if in_component and line.strip() == "":
