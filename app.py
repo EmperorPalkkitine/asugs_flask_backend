@@ -224,6 +224,7 @@ def modify_component():
 
                         updated_param_line = " ".join(parts)
                         updated_lines.append(updated_param_line)
+                        print(f"Updated parameters: {updated_param_line}")
 
             # Exit the block when encountering a blank line
             if in_component and line.strip() == "":
