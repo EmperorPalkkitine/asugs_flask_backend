@@ -6,6 +6,7 @@ import os
 import time
 import csv
 import math
+from datetime import datetime
 
 app = Flask(__name__)
 CORS(app)
@@ -27,7 +28,8 @@ AWS_REGION = os.getenv('AWS_REGION', 'us-east-2')
 BUCKET_NAME = "gridscout"
 DSS_FILE_KEY = "Trial2_Functional_Circuit.py"  # Key to the OpenDSS .py file in the bucket
 CSV_FILE_KEY = "IEEE37_BusXY.csv" # Key to bus coord CSV file in s3 bucket
-new_dss_file_key = f"Trial2_Functional_Circuit_{int(time.time())}.py"
+readable_timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+new_dss_file_key = f"Trial2_Functional_Circuit_{readable_timestamp}.py"
 
 # S3 Client Initialization
 s3_client = boto3.client(
