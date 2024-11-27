@@ -216,7 +216,7 @@ def modify_component():
                                 key_lower = key.lower()
 
                                 for param_key, param_value in parameters.items():
-                                    base_param = param_key[:1].lower()
+                                    base_param = param_key[:-1].lower()
                                     winding = param_key[-1]
                                     print(f"Base param = {base_param.lower()} and winding = {winding}")
 
