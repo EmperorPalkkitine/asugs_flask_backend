@@ -226,13 +226,11 @@ def modify_component():
                         updated_param_line = " ".join(parts)
                         updated_lines.append(updated_param_line + "\n")
                         print(f"Updated parameters: {updated_param_line}")
-                    
-                        if in_component and component_type == "Transformer":
-                            updated_lines.append("\n")
 
             # Exit the block when encountering a blank line
             if in_component and line.strip() == "":
                 print(f"Exiting component block at line {i}: {line.strip()}")
+                updated_lines.append("\n")
                 in_component = False
                 bus_found = False
                 component_updated = False
