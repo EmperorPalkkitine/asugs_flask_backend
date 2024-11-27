@@ -209,20 +209,21 @@ def modify_component():
 
                  # Update parameters in the line if any match
                     if component_type == "Transformer":
-                        for key, value in parameters.items():
-                            base_param = key[:-1]
-                            winding = key[-1]
-                            search_phrase = f"wdg={winding}"
+                        parts = line.split()
+                        for i, part in enumerate(parts):
+                            if "=" in part:
+                                key, value = part.split("=")
+                                key_lower = key.lower()
 
-                            if search_phrase in line and base_param.lower() in line.lower():
-                                updated_parameter_line = re.sub(
-                                    rf"({base_param.lower()}=)(\S+)",
-                                    rf"\1{value}",
-                                    line,
-                                    flags=re.IGNORECASE
-                                )
-                                updated_lines.append(updated_parameter_line)
-                                print(f"Updated parameters: {updated_parameter_line}")
+                                for param_key, param_value in parameters.items():
+                                    base_param = param_key[:1].lower()
+                                    winding = param_key[-1]
+
+                                    if f"wdg={winding}" in line and key_lower == base_param:
+                                        parts[i] = f"{key}={param_value}"
+
+                        updated_param_line = " ".join(parts)
+                        updated_lines.append(updated_param_line)
 
             # Exit the block when encountering a blank line
             if in_component and line.strip() == "":
