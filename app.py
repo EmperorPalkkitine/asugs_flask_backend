@@ -227,8 +227,8 @@ def modify_component():
                         updated_lines.append(updated_param_line + "\n")
                         print(f"Updated parameters: {updated_param_line}")
                     
-                if in_component and component_type == "Transformer":
-                    updated_lines.append("\n")
+                        if in_component and component_type == "Transformer":
+                            updated_lines.append("\n")
 
             # Exit the block when encountering a blank line
             if in_component and line.strip() == "":
