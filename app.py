@@ -224,8 +224,11 @@ def modify_component():
                                         parts[i] = f"{key}={param_value}"
 
                         updated_param_line = " ".join(parts)
-                        updated_lines.append(updated_param_line)
+                        updated_lines.append(updated_param_line + "\n")
                         print(f"Updated parameters: {updated_param_line}")
+                    
+                    if in_component and component_type == "Transformer":
+                        updated_lines.append("\n")
 
             # Exit the block when encountering a blank line
             if in_component and line.strip() == "":
@@ -246,12 +249,12 @@ def modify_component():
         # Append the modified component block to the lines after all changes
         updated_lines.extend(component_lines_to_update)
 
-        print(f"Updated lines verification:\n{updated_lines[:21]}")
+        print(f"Updated lines verification:\n{updated_lines[:22]}")
 
         # Write the updated lines back to the local file
         with open(local_file, "w") as file:
             file.writelines(updated_lines)
-            print(f"Final updated lines written to file: {updated_lines[:21]}")
+            print(f"Final updated lines written to file: {updated_lines[:22]}")
 
         # Upload the updated file to S3
         new_dss_file_key = f"Trial2_Functional_Circuit_{int(time.time())}.py"
