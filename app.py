@@ -218,6 +218,7 @@ def modify_component():
                                 for param_key, param_value in parameters.items():
                                     base_param = param_key[:1].lower()
                                     winding = param_key[-1]
+                                    print(f"Base param = {base_param.lower()} and winding = {winding}")
 
                                     if f"wdg={winding}" in line and key_lower == base_param:
                                         parts[i] = f"{key}={param_value}"
