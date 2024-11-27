@@ -210,7 +210,7 @@ def modify_component():
                  # Update parameters in the line if any match
                     if component_type == "Transformer":
                         parts = line.split()
-                        for i, part in enumerate(parts):
+                        for j, part in enumerate(parts):
                             if "=" in part:
                                 key, value = part.split("=")
                                 key_lower = key.lower()
@@ -234,7 +234,7 @@ def modify_component():
                 bus_found = False
                 component_updated = False
             
-            if in_component:
+            if in_component and not bus_found:
                 updated_lines.append(line)
                 print(f"Updated lines: {updated_lines}")
 
