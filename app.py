@@ -55,19 +55,27 @@ def get_data(component_id):
         table_mapping = {
             'Transformer': {
                 'table': 'transformers',
-                'columns': ['Conn1', 'Kv1', 'Kva1', 'R1', 'Conn2', 'Kv2', 'Kva2', 'R2']
+                'columns': ['Name', 'Conn1', 'Kv1', 'Kva1', 'R1', 'Conn2', 'Kv2', 'Kva2', 'R2']
             },
             'Capacitor Bank': {
                 'table': 'capacitor_banks',
-                'columns': ['Phases', 'Kv', 'Kvar', 'Bus1']
+                'columns': ['Name', 'Phases', 'Kv', 'Kvar', 'Bus1']
             },
             'Generator': {
                 'table': 'generators',
-                'columns': ['Phases', 'Kv', 'Kw', 'Kvar', 'Bus1']
+                'columns': ['Name', 'Phases', 'Kv', 'Kw', 'Kvar', 'Bus1']
             },
             'Load': {
                 'table': 'loads',
-                'columns': ['Phases', 'Kv', 'Kw', 'Kvar', 'Bus1']
+                'columns': ['Name', 'Phases', 'Kv', 'Kw', 'Kvar', 'Bus1']
+            },
+            'Fuse' : {
+                'table': 'fuses',
+                'columns': ['Name', 'MonitoredObj', 'MonitoredTerm', 'Status']
+            },
+            'Reactor' : {
+                'table': 'reactors',
+                'columns': ['Name', 'Bus1', 'Bus2', 'Phases', 'R', 'X']
             }
         }
 
@@ -151,24 +159,26 @@ def modify_component():
         geolocation = data.get("geolocation")
         parameters = data.get("parameters")
         component_id = data.get("component_id")
+        name = data.get("name")
 
         print(f"Component Type: {component_type}")
         print(f"Component ID: {component_id}")
         print(f"Geolocation: {geolocation}")
         print(f"Parameters: {parameters}")
+        print(f"Component Name: {name}")
 
-        if not component_type or not geolocation or not parameters or not component_id:
+        if not component_type or not geolocation or not parameters or not component_id or not name:
             return jsonify({"error": "Invalid payload"}), 400
 
         if not geolocation or len(geolocation) != 2:
             return jsonify({"error": "Invalid geolocation. Expected a tuple (x, y)."}), 400
 
         # Load bus coordinates from S3
-        bus_coords = load_bus_coordinates_from_s3()
-        closest_bus = find_closest_bus(bus_coords, geolocation)
-        print(f"Closest bus found: {closest_bus}")
-        if not closest_bus:
-            return jsonify({"error": f"No matching bus found for the geolocation {geolocation}"}), 404
+        #bus_coords = load_bus_coordinates_from_s3()
+        #closest_bus = find_closest_bus(bus_coords, geolocation)
+        #print(f"Closest bus found: {closest_bus}")
+        #if not closest_bus:
+         #   return jsonify({"error": f"No matching bus found for the geolocation {geolocation}"}), 404
 
         local_file = "/tmp/temp_dss_file.py"
         s3_client.download_file(BUCKET_NAME, DSS_FILE_KEY, local_file)
@@ -179,6 +189,7 @@ def modify_component():
 
         updated_lines = []
         in_component = False
+        component_identified = False
         bus_found = False
         component_updated = False  # Track if the component name has been updated
         component_lines_to_update = []  # Store lines to be updated
@@ -193,41 +204,44 @@ def modify_component():
                 component_start_index = i
                 current_component_name = line.split()[1]
                 print(f"Component name identified: {current_component_name}")
+            if in_component and current_component_name == name:
+                print(f"Processing line: {line.strip()} within component: {current_component_name}")
+                component_identified = True
 
-            if in_component:
-                print(f"Processing line within component block: {line.strip()}")
-                if f"bus={closest_bus}" in line:
-                    bus_found = True
-                    print(f"Bus found: {line.strip()}")
+            #if in_component:
+             #   print(f"Processing line within component block: {line.strip()}")
+              #  if f"bus={closest_bus}" in line:
+               #     bus_found = True
+                #    print(f"Bus found: {line.strip()}")
 
-                if bus_found and not component_updated:
+                #if bus_found and not component_updated:
                     # Update component name and add to updated lines
-                    updated_line = lines[component_start_index].replace(
-                        current_component_name.split('.')[-1], component_id
-                    )
-                    print(f"Updated component name at line {component_start_index}: {updated_line.strip()}")
-                    updated_lines[component_start_index] = updated_line
-                    print(f"Component lines to update: {updated_lines}")
+                 #   updated_line = lines[component_start_index].replace(
+                  #      current_component_name.split('.')[-1], component_id
+                   # )
+                    #print(f"Updated component name at line {component_start_index}: {updated_line.strip()}")
+                    #updated_lines[component_start_index] = updated_line
+                    #print(f"Component lines to update: {updated_lines}")
 
                  # Update parameters in the line if any match
-                    if component_type == "Transformer":
-                        parts = line.split()
-                        for i, part in enumerate(parts):
-                            if "=" in part:
-                                key, value = part.split("=")
-                                key_lower = key.lower()
+            if component_type == "Transformer":
+                parts = line.split()
+                for i, part in enumerate(parts):
+                    if "=" in part:
+                     key, value = part.split("=")
+                     key_lower = key.lower()
 
-                                for param_key, param_value in parameters.items():
-                                    base_param = param_key[:-1].lower()
-                                    winding = param_key[-1]
-                                    print(f"Base param = {base_param.lower()} and winding = {winding}")
+                     for param_key, param_value in parameters.items():
+                         base_param = param_key[:-1].lower()
+                         winding = param_key[-1]
+                         print(f"Base param = {base_param.lower()} and winding = {winding}")
 
-                                    if f"wdg={winding}" in line and key_lower == base_param:
-                                        parts[i] = f"{key}={param_value}"
+                         if f"wdg={winding}" in line and key_lower == base_param:
+                            parts[i] = f"{key}={param_value}"
 
-                        updated_param_line = " ".join(parts)
-                        updated_lines.append(updated_param_line + "\n")
-                        print(f"Updated parameters: {updated_param_line}")
+            updated_param_line = " ".join(parts)
+            updated_lines.append(updated_param_line + "\n")
+            print(f"Updated parameters: {updated_param_line}")
 
             # Exit the block when encountering a blank line
             if in_component and line.strip() == "":
