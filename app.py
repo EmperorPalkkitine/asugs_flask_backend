@@ -59,11 +59,11 @@ def get_data(component_id):
             },
             'Capacitor Bank': {
                 'table': 'capacitor_banks',
-                'columns': ['Name', 'Phases', 'Kv', 'Kvar', 'Bus1']
+                'columns': ['Name', 'Phases', 'kV', 'kVAR', 'Bus1']
             },
             'Generator': {
                 'table': 'generators',
-                'columns': ['Name', 'Phases', 'Kv', 'Kw', 'Kvar', 'Bus1']
+                'columns': ['Name', 'Phases', 'kV', 'kW', 'kvar', 'Bus1']
             },
             'Load': {
                 'table': 'loads',
