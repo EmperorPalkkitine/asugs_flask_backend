@@ -14,9 +14,9 @@ CORS(app)
 # MySQL Database connection
 db = mysql.connector.connect(
     host='gridscout-db.cjkusa2a836b.us-east-2.rds.amazonaws.com',
-    user='APP_TO_SQL_USER',
-    password='password',
-    database='APP_TO_SQL',
+    user='base_user',
+    password='ASUstudent',
+    database='Gridscout_main',
 )
 
 cursor = db.cursor()
@@ -43,6 +43,49 @@ s3_client = boto3.client(
 def home():
     return jsonify({"message": "Flask app is running"})
 
+# Process Work Order Number
+@app.route('/process_work_order/<work_order_number>',methods=['GET'])
+def process_work_order(work_order_number):
+    try:
+        # Query work order table to get old and new compnent IDs and circuit table
+        query = """
+            SELECT 'Circuit_ID', 'Schematic_Component_ID', 'Bus_1', 'Bus_2'
+            FROM Tracking_Table
+            WHERE 'Tracking_ID' = %s
+        """
+        cursor.execute(query, (work_order_number,))
+        result = cursor.fetchone()
+
+        if not result:
+            return jsonify({"error": "Work order not found"}), 404
+
+        Circuit_ID, Schematic_ID, Bus_1, Bus_2 = result
+        print(f"Circuit: {Circuit_ID}, Schematic ID: {Schematic_ID}, Bus 1: {Bus_1}, Bus 2: {Bus_2}")
+
+        # Check if old component ID exists in the circuit table
+        check_query = f"SELECT * FROM 'OpenDSS' WHERE Circuit_ID = %s AND Schematic_Component_ID = %s"
+        cursor.execute(check_query, (Circuit_ID, Schematic_ID,))
+        old_component_exists = cursor.fetchone() is not None
+
+        # Determine the action in the application
+        if old_component_exists:
+            action = "replace_component"
+        else: 
+            action = "add_component"
+        
+        # Return response for the Flutter app
+        return jsonify({
+            "work_order_number": work_order_number,
+            "Circuit_ID": Circuit_ID,
+            "Schematic_ID": Schematic_ID,
+            "Bus_1": Bus_1,
+            "Bus_2": Bus_2,
+            "action": action,
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 # Retrieve component data from MySQL
 @app.route('/get_data/<component_id>', methods=['GET'])
 def get_data(component_id):
@@ -54,29 +97,26 @@ def get_data(component_id):
 
         table_mapping = {
             'Transformer': {
-                'table': 'transformers',
+                'table': 'Transformer',
                 'columns': ['Name', 'Conn1', 'Kv1', 'Kva1', 'R1', 'Conn2', 'Kv2', 'Kva2', 'R2']
             },
-            'Capacitor Bank': {
-                'table': 'capacitor_banks',
+            'Capacitor': {
+                'table': 'Capacitor',
                 'columns': ['Name', 'Phases', 'kV', 'kVAR', 'Bus1']
             },
             'Generator': {
-                'table': 'generators',
+                'table': 'Generator',
                 'columns': ['Name', 'Phases', 'kV', 'kW', 'kvar', 'Bus1']
             },
-            'Load': {
-                'table': 'loads',
-                'columns': ['Name', 'Phases', 'Kv', 'Kw', 'Kvar', 'Bus1']
-            },
             'Fuse' : {
-                'table': 'fuses',
+                'table': 'Fuse',
                 'columns': ['Name', 'MonitoredObj', 'MonitoredTerm', 'Status']
             },
             'Reactor' : {
-                'table': 'reactors',
+                'table': 'Reactor',
                 'columns': ['Name', 'Bus1', 'Bus2', 'Phases', 'R', 'X']
-            }
+            },
+            # can add more component tables for mapping here
         }
 
         component_info = table_mapping.get(component_type)
