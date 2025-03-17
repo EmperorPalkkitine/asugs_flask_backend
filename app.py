@@ -43,15 +43,14 @@ s3_client = boto3.client(
 def home():
     return jsonify({"message": "Flask app is running"})
 
-# Process Work Order Number
-@app.route('/process_work_order/<work_order_number>',methods=['GET'])
+@app.route('/process_work_order/<work_order_number>', methods=['GET'])
 def process_work_order(work_order_number):
     try:
-        # Query work order table to get old and new compnent IDs and circuit table
+        # Query work order table to get old and new component IDs and circuit table
         query = """
-            SELECT 'Circuit_ID', 'Schematic_Component_ID', 'Bus_1', 'Bus_2'
+            SELECT Circuit_ID, Schematic_Component_ID, Bus_1, Bus_2
             FROM Tracking_Table
-            WHERE 'Tracking_ID' = %s
+            WHERE Tracking_ID = %s
         """
         cursor.execute(query, (work_order_number,))
         result = cursor.fetchone()
@@ -63,14 +62,14 @@ def process_work_order(work_order_number):
         print(f"Circuit: {Circuit_ID}, Schematic ID: {Schematic_ID}, Bus 1: {Bus_1}, Bus 2: {Bus_2}")
 
         # Check if old component ID exists in the circuit table
-        check_query = f"SELECT * FROM 'OpenDSS' WHERE Circuit_ID = %s AND Schematic_Component_ID = %s"
+        check_query = "SELECT * FROM OpenDSS WHERE Circuit_ID = %s AND Schematic_Component_ID = %s"
         cursor.execute(check_query, (Circuit_ID, Schematic_ID,))
         old_component_exists = cursor.fetchone() is not None
 
         # Determine the action in the application
         if old_component_exists:
             action = "replace_component"
-        else: 
+        else:
             action = "add_component"
         
         # Return response for the Flutter app
@@ -85,6 +84,7 @@ def process_work_order(work_order_number):
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 # Retrieve component data from MySQL
 @app.route('/get_data/<component_id>', methods=['GET'])
