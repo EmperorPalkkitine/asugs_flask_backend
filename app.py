@@ -190,8 +190,8 @@ def update_line_parameter(line, key, value):
 
 # Modify OpenDSS file based on geolocation and parameters
 
-@app.route('/modify_python_file', methods=['POST'])
-def modify_python_file():
+@app.route('/modify_component', methods=['POST'])
+def modify_component():
     try:
         data = request.json
         print(f"Received data: {data}")
