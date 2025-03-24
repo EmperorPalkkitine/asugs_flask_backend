@@ -196,10 +196,9 @@ def modify_component():
         data = request.json
         print(f"Received data: {data}")
 
-        component_name = data.get("name")
         parameters = data.get("parameters")
 
-        if not component_name or not parameters:
+        if not parameters:
             return jsonify({"error": "Missing component_name or parameters"}), 400
 
         # Download Python file from S3
