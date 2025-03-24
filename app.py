@@ -217,7 +217,7 @@ def modify_component():
 
         # Construct a single "Edit" command
         param_string = " ".join([f"{key}={value}" for key, value in parameters.items()])
-        edit_command = f"\n\ndss.text(""Edit {component_type}.{component_id} {param_string}"")\n"
+        edit_command = f'\n\ndss.text("Edit {component_type}.{component_id} {param_string}")\n'
 
         # Append the single "Edit" command to the file
         with open(local_file, "a") as file:
