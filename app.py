@@ -7,12 +7,9 @@ import time
 import csv
 import math
 from datetime import datetime
-import py_dss_interface
 
 app = Flask(__name__)
 CORS(app)
-
-dss = py_dss_interface.DSS()
 
 # MySQL Database connection
 db = mysql.connector.connect(
@@ -193,39 +190,45 @@ def update_line_parameter(line, key, value):
 
 # Modify OpenDSS file based on geolocation and parameters
 
-@app.route('/modify_component', methods=['POST'])
-def modify_component():
+@app.route('/modify_python_file', methods=['POST'])
+def modify_python_file():
     try:
         data = request.json
         print(f"Received data: {data}")
 
-        component_type = data.get("component_type")
+        component_name = data.get("name")
         parameters = data.get("parameters")
-        component_name = data.get("name")  # Full component name (e.g., "Transformer.T1")
 
-        # Download DSS file from S3
-        local_file = "/tmp/temp_dss_file.dss"
+        if not component_name or not parameters:
+            return jsonify({"error": "Missing component_name or parameters"}), 400
+
+        # Download Python file from S3
+        local_file = "/tmp/temp_python_file.py"
         s3_client.download_file(BUCKET_NAME, DSS_FILE_KEY, local_file)
 
-        # Update parameters
-        for param, value in parameters.items():
-            command = f"Edit {component_name} {param}={value}"
-            print(f"Executing command: {command}")
-            dss.text(command)
+        # Read the existing file content
+        with open(local_file, "r") as file:
+            lines = file.readlines()
 
-        # Save the modified DSS file
-        updated_file = "/tmp/updated_dss_file.dss"
-        dss.text(f"Save Circuit Dir={os.path.dirname(updated_file)}")
+        # Append new "Edit" commands
+        with open(local_file, "a") as file:
+            for param, value in parameters.items():
+                edit_command = f'Edit {component_name} {param}={value}\n'
+                file.write(edit_command)
+                print(f"Added line: {edit_command.strip()}")
 
-        # Upload back to S3
-        new_dss_file_key = f"Updated_Circuit.dss"
-        s3_client.upload_file(updated_file, BUCKET_NAME, new_dss_file_key)
+        # Upload the modified file back to S3
+        updated_file_key = "Updated_" + DSS_FILE_KEY  # Example: Updated_your-python-file.py
+        s3_client.upload_file(local_file, BUCKET_NAME, updated_file_key)
 
-        return jsonify({"message": "Component updated successfully.", "new_file": new_dss_file_key}), 200
+        return jsonify({"message": "Python file updated successfully.", "new_file": updated_file_key}), 200
 
     except Exception as e:
         print(f"Error: {str(e)}")
         return jsonify({"error": str(e)}), 500
+
+if __name__ == "__main__":
+    app.run(debug=True)
 
 ''' @app.route('/modify_component', methods=['POST'])
  def modify_component():
