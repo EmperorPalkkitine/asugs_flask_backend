@@ -7,9 +7,12 @@ import time
 import csv
 import math
 from datetime import datetime
+import py_dss_interface
 
 app = Flask(__name__)
 CORS(app)
+
+dss = py_dss_interface.DSS()
 
 # MySQL Database connection
 db = mysql.connector.connect(
