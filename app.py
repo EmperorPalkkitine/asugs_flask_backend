@@ -217,7 +217,7 @@ def modify_component():
 
         # Find where "Save Circuit" is in the file and insert before it
         for i, line in enumerate(lines):
-            if 'dss.text("Save Circuit' in line:  # Look for Save Circuit line
+            if '# Save' in line:  # Look for Save Circuit line
                 lines.insert(i, edit_command)  # Insert edit command before it
                 break
         else:
