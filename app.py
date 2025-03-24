@@ -215,21 +215,22 @@ def modify_component():
         with open(local_file, "r") as file:
             lines = file.readlines()
 
-        # Modify the file by appending "Edit" commands
+        # Construct a single "Edit" command
+        param_string = " ".join([f"{key}={value}" for key, value in parameters.items()])
+        edit_command = f"Edit {component_type}.{component_id} {param_string}\n"
+
+        # Append the single "Edit" command to the file
         with open(local_file, "a") as file:
-            for param, value in parameters.items():
-                edit_command = f'Edit {component_type}.{component_id} {param}={value}\n'
-                file.write(edit_command)
-                print(f"Added line: {edit_command.strip()}")
+            file.write(edit_command)
+            print(f"Added line: {edit_command.strip()}")
 
         # Upload the modified file back to S3
-        updated_file_key = f"Updated_{DSS_FILE_KEY}"  # Example: Updated_your-python-file.py
         try:
-            s3_client.upload_file(local_file, BUCKET_NAME, updated_file_key)
+            s3_client.upload_file(local_file, BUCKET_NAME, new_dss_file_key)
         except Exception as e:
             return jsonify({"error": f"Failed to upload file to S3: {str(e)}"}), 500
 
-        return jsonify({"message": "Python file updated successfully.", "new_file": updated_file_key}), 200
+        return jsonify({"message": "Python file updated successfully.", "new_file": new_dss_file_key}), 200
 
     except Exception as e:
         print(f"Error: {str(e)}")
