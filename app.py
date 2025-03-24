@@ -203,17 +203,13 @@ def modify_component():
         if not parameters:
             return jsonify({"error": "Missing parameters"}), 400
 
-        # Download Python file from S3
-        local_file = "/tmp/temp_python_file.py"
-        s3_client.download_file(BUCKET_NAME, DSS_FILE_KEY, local_file)
-
-        # Read the existing file content
-        with open(local_file, "r") as file:
-            lines = file.readlines()
-
-        # Create the edit command
-        param_string = " ".join([f"{param}={value}" for param, value in parameters.items()])
-        edit_command = f'\ndss.text("Edit {component_type}.{component_id} {param_string}")\n\n'
+        # Prepare lists for connections, voltages, and kVA if the component is a transformer
+        if component_type.lower() == "transformer":
+            conns = [parameters["Conn1"], parameters["Conn2"]]
+            kvs = [parameters["kV1"], parameters["kV2"]]
+            kvas = [parameters["kVA1"], parameters["kVA2"]]
+            edit_command = f'\n("Edit Transformer.{component_id} Windings={parameters['Windings']} Phases={parameters['Phases']} Xhl={parameters['Xhl']} Conns={conns} kVs={kvs} kVAs={kvas}")\n'
+            print(f"Generated Edit command for Transformer: {edit_command}")
 
         # Find where "Save Circuit" is in the file and insert before it
         for i, line in enumerate(lines):
