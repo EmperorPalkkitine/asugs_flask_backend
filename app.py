@@ -197,28 +197,37 @@ def modify_component():
         print(f"Received data: {data}")
 
         parameters = data.get("parameters")
+        component_type = data.get("component_type")
+        component_id = data.get("component_id")
 
-        if not parameters:
-            return jsonify({"error": "Missing component_name or parameters"}), 400
+        # Validate required fields
+        if not parameters or not component_type or not component_id:
+            return jsonify({"error": "Missing parameters, component_type, or component_id"}), 400
 
-        # Download Python file from S3
+        # Download the Python file from S3
         local_file = "/tmp/temp_python_file.py"
-        s3_client.download_file(BUCKET_NAME, DSS_FILE_KEY, local_file)
+        try:
+            s3_client.download_file(BUCKET_NAME, DSS_FILE_KEY, local_file)
+        except Exception as e:
+            return jsonify({"error": f"Failed to download file from S3: {str(e)}"}), 500
 
         # Read the existing file content
         with open(local_file, "r") as file:
             lines = file.readlines()
 
-        # Append new "Edit" commands
+        # Modify the file by appending "Edit" commands
         with open(local_file, "a") as file:
             for param, value in parameters.items():
-                edit_command = f'Edit {component_name} {param}={value}\n'
+                edit_command = f'Edit {component_type}.{component_id} {param}={value}\n'
                 file.write(edit_command)
                 print(f"Added line: {edit_command.strip()}")
 
         # Upload the modified file back to S3
-        updated_file_key = "Updated_" + DSS_FILE_KEY  # Example: Updated_your-python-file.py
-        s3_client.upload_file(local_file, BUCKET_NAME, updated_file_key)
+        updated_file_key = f"Updated_{DSS_FILE_KEY}"  # Example: Updated_your-python-file.py
+        try:
+            s3_client.upload_file(local_file, BUCKET_NAME, updated_file_key)
+        except Exception as e:
+            return jsonify({"error": f"Failed to upload file to S3: {str(e)}"}), 500
 
         return jsonify({"message": "Python file updated successfully.", "new_file": updated_file_key}), 200
 
