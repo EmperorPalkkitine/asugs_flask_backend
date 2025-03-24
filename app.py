@@ -197,32 +197,36 @@ def modify_component():
         print(f"Received data: {data}")
 
         parameters = data.get("parameters")
-        component_type = data.get("component_type")
-        component_id = data.get("component_id")
+        component_type = data.get('component_type')
+        component_id = data.get('component_id')
 
-        # Validate required fields
-        if not parameters or not component_type or not component_id:
-            return jsonify({"error": "Missing parameters, component_type, or component_id"}), 400
+        if not parameters:
+            return jsonify({"error": "Missing parameters"}), 400
 
-        # Download the Python file from S3
+        # Download Python file from S3
         local_file = "/tmp/temp_python_file.py"
-        try:
-            s3_client.download_file(BUCKET_NAME, DSS_FILE_KEY, local_file)
-        except Exception as e:
-            return jsonify({"error": f"Failed to download file from S3: {str(e)}"}), 500
+        s3_client.download_file(BUCKET_NAME, DSS_FILE_KEY, local_file)
 
         # Read the existing file content
         with open(local_file, "r") as file:
             lines = file.readlines()
 
-        # Construct a single "Edit" command
-        param_string = " ".join([f"{key}={value}" for key, value in parameters.items()])
-        edit_command = f'\n\ndss.text("Edit {component_type}.{component_id} {param_string}")\n'
+        # Create the edit command
+        param_string = " ".join([f"{param}={value}" for param, value in parameters.items()])
+        edit_command = f'\ndss.text("Edit {component_type}.{component_id} {param_string}")\n\n'
 
-        # Append the single "Edit" command to the file
-        with open(local_file, "a") as file:
-            file.write(edit_command)
-            print(f"Added line: {edit_command.strip()}")
+        # Find where "Save Circuit" is in the file and insert before it
+        for i, line in enumerate(lines):
+            if 'dss.text("Save Circuit' in line:  # Look for Save Circuit line
+                lines.insert(i, edit_command)  # Insert edit command before it
+                break
+        else:
+            # If "Save Circuit" isn't found, just append at the end
+            lines.append(edit_command)
+
+        # Write updated content back to the file
+        with open(local_file, "w") as file:
+            file.writelines(lines)
 
         # Upload the modified file back to S3
         try:
