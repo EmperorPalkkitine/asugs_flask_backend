@@ -202,7 +202,7 @@ def modify_component():
 
         # Download DSS file from S3
         local_file = "/tmp/temp_dss_file.dss"
-        s3_client.download_file(BUCKET_NAME, DSS_FILE_KEY)
+        s3_client.download_file(BUCKET_NAME, DSS_FILE_KEY, local_file)
 
         # Update parameters
         for param, value in parameters.items():
