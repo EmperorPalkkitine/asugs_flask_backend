@@ -97,7 +97,7 @@ def get_data(component_id):
         table_mapping = {
             'Transformer': {
                 'table': 'Transformer',
-                'columns': ['Phases', 'Winding', 'Xhl', 'Conn1', 'kV1', 'kVA1', 'Conn2', 'kV2', 'kVA2']
+                'columns': ['Phases', 'Windings', 'Xhl', 'Conn1', 'kV1', 'kVA1', 'Conn2', 'kV2', 'kVA2']
             },
             'Capacitor': {
                 'table': 'Capacitor',
