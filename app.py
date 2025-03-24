@@ -202,6 +202,14 @@ def modify_component():
 
         if not parameters:
             return jsonify({"error": "Missing parameters"}), 400
+        
+         # Download Python file from S3
+        local_file = "/tmp/temp_python_file.py"
+        s3_client.download_file(BUCKET_NAME, DSS_FILE_KEY, local_file)
+
+        # Read the existing file content
+        with open(local_file, "r") as file:
+            lines = file.readlines()
 
         # Prepare lists for connections, voltages, and kVA if the component is a transformer
         if component_type.lower() == "transformer":
