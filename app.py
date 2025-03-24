@@ -216,7 +216,7 @@ def modify_component():
             conns = [parameters["Conn1"], parameters["Conn2"]]
             kvs = [parameters["kV1"], parameters["kV2"]]
             kvas = [parameters["kVA1"], parameters["kVA2"]]
-            edit_command = f'\n("Edit Transformer.{component_id} Windings={parameters['Windings']} Phases={parameters['Phases']} Xhl={parameters['Xhl']} Conns={conns} kVs={kvs} kVAs={kvas}")\n'
+            edit_command = f'\n("Edit Transformer.{component_id} Windings={parameters["Windings"]} Phases={parameters["Phases"]} Xhl={parameters["Xhl"]} Conns={conns} kVs={kvs} kVAs={kvas}")\n'
             print(f"Generated Edit command for Transformer: {edit_command}")
 
         # Find where "Save Circuit" is in the file and insert before it
