@@ -26,10 +26,10 @@ AWS_ACCESS_KEY = os.getenv('AWS_ACCESS_KEY_ID')
 AWS_SECRET_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
 AWS_REGION = os.getenv('AWS_REGION', 'us-east-2')
 BUCKET_NAME = "gridscout"
-DSS_FILE_KEY = "Trial2_Functional_Circuit.py"  # Key to the OpenDSS .py file in the bucket
+DSS_FILE_KEY = "DSS_Tassel.py"  # Key to the OpenDSS .py file in the bucket
 CSV_FILE_KEY = "IEEE37_BusXY.csv" # Key to bus coord CSV file in s3 bucket
 readable_timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-new_dss_file_key = f"Trial2_Functional_Circuit_{readable_timestamp}.py"
+new_dss_file_key = f"DSS_Tassel_{readable_timestamp}.py"
 
 # S3 Client Initialization
 s3_client = boto3.client(
@@ -73,7 +73,7 @@ def process_work_order(work_order_number):
             action = "add_component"
         
         # Return response for the Flutter app
-        return jsonify({
+        return jsonify({  
             "work_order_number": work_order_number,
             "Circuit_ID": Circuit_ID,
             "Schematic_ID": Schematic_ID,
@@ -84,7 +84,6 @@ def process_work_order(work_order_number):
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 # Retrieve component data from MySQL
 @app.route('/get_data/<component_id>', methods=['GET'])
@@ -98,7 +97,7 @@ def get_data(component_id):
         table_mapping = {
             'Transformer': {
                 'table': 'Transformer',
-                'columns': ['Name', 'Conn1', 'Kv1', 'Kva1', 'R1', 'Conn2', 'Kv2', 'Kva2', 'R2']
+                'columns': ['Phases', 'Winding', 'Xhl', 'Conn1', 'kV1', 'kVA1', 'Conn2', 'kV2', 'kVA2']
             },
             'Capacitor': {
                 'table': 'Capacitor',
@@ -190,8 +189,43 @@ def update_line_parameter(line, key, value):
     return line
 
 # Modify OpenDSS file based on geolocation and parameters
+
 @app.route('/modify_component', methods=['POST'])
 def modify_component():
+    try:
+        data = request.json
+        print(f"Received data: {data}")
+
+        component_type = data.get("component_type")
+        parameters = data.get("parameters")
+        component_name = data.get("name")  # Full component name (e.g., "Transformer.T1")
+
+        # Download DSS file from S3
+        local_file = "/tmp/temp_dss_file.dss"
+        s3_client.download_file(BUCKET_NAME, DSS_FILE_KEY)
+
+        # Update parameters
+        for param, value in parameters.items():
+            command = f"Edit {component_name} {param}={value}"
+            print(f"Executing command: {command}")
+            dss.text(command)
+
+        # Save the modified DSS file
+        updated_file = "/tmp/updated_dss_file.dss"
+        dss.text(f"Save Circuit Dir={os.path.dirname(updated_file)}")
+
+        # Upload back to S3
+        new_dss_file_key = f"Updated_Circuit.dss"
+        s3_client.upload_file(updated_file, BUCKET_NAME, new_dss_file_key)
+
+        return jsonify({"message": "Component updated successfully.", "new_file": new_dss_file_key}), 200
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+''' @app.route('/modify_component', methods=['POST'])
+ def modify_component():
     try:
         data = request.json
         print(f"Received data: {data}")
@@ -310,7 +344,7 @@ def modify_component():
             print(f"Final updated lines written to file: {updated_lines[:22]}")
 
         # Upload the updated file to S3
-        new_dss_file_key = f"Trial2_Functional_Circuit_{readable_timestamp}.py"
+        new_dss_file_key = f"DSS_Tassel_{readable_timestamp}.py"
         print(f"Uploading updated file to S3: {new_dss_file_key}")
         s3_client.upload_file(local_file, BUCKET_NAME, new_dss_file_key)
         print(f"File successfully uploaded to S3: {new_dss_file_key}")
@@ -319,7 +353,7 @@ def modify_component():
 
     except Exception as e:
         print(f"Error: {str(e)}")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": str(e)}), 500'''
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000)
