@@ -101,19 +101,19 @@ def get_data(component_id):
             },
             'Capacitor': {
                 'table': 'Capacitor',
-                'columns': ['Name', 'Phases', 'kV', 'kVAR', 'Bus1']
+                'columns': ['Phases', 'kVAR', 'kV', 'Bus1']
             },
             'Generator': {
                 'table': 'Generator',
-                'columns': ['Name', 'Phases', 'kV', 'kW', 'kvar', 'Bus1']
+                'columns': ['Phases', 'kV', 'kW', 'kvar', 'Bus1','Model']
             },
             'Fuse' : {
                 'table': 'Fuse',
-                'columns': ['Name', 'MonitoredObj', 'MonitoredTerm', 'Status']
+                'columns': ['MonitoredObj', 'MonitoredTerm', 'Status']
             },
             'Reactor' : {
                 'table': 'Reactor',
-                'columns': ['Name', 'Bus1', 'Bus2', 'Phases', 'R', 'X']
+                'columns': ['Phases', 'X', 'kV', 'kVAR']
             },
             # can add more component tables for mapping here
         }
@@ -190,6 +190,7 @@ def update_line_parameter(line, key, value):
 
 # Modify OpenDSS file based on geolocation and parameters
 
+#Modify component method using py dss commands
 @app.route('/modify_component', methods=['POST'])
 def modify_component():
     try:
@@ -218,6 +219,26 @@ def modify_component():
             kvas = [parameters["kVA1"], parameters["kVA2"]]
             edit_command = f'dss.text("Edit Transformer.{component_id} Windings={parameters["Windings"]} Phases={parameters["Phases"]} Xhl={parameters["Xhl"]} Conns={conns} kVs={kvs} kVAs={kvas}")\n\n'
             print(f"Generated Edit command for Transformer: {edit_command}")
+        
+        elif component_type.lower() == "capacitor":
+            edit_command = f'dss.text("Edit Capacitor.{component_id} Bus1={parameters["Bus1"]} Phases={parameters["Phases"]} kvar={parameters["kVAR"]} kV={parameters["kV"]}")\n\n'
+            print(f"Generated Edit command for Capacitor: {edit_command}")
+
+        elif component_type.lower() == "generator":
+            edit_command = f'dss.text("Edit Generator.{component_id} Bus1={parameters["Bus1"]} Phases={parameters["Phases"]} kV={parameters["kV"]} kW={parameters["kW"]} kvar={parameters["kvar"]} Model={parameters["Model"]}")\n\n'
+            print(f"Generated Edit command for Generator: {edit_command}")
+
+        elif component_type.lower() == "fuse":
+            edit_command = f'dss.text("Edit Fuse.{component_id} MonitoredObj={parameters["MonitoredObj"]} RatedCurrent={parameters["RatedCurrent"]}")\n\n'
+            print(f"Generated Edit command for Fuse: {edit_command}")
+        
+        elif component_type.lower() == "reactor":
+            edit_command = f'dss.text("Edit Reactor.{component_id} Bus1={parameters["Bus1"]} Phases={parameters["Phases"]} kV={parameters["kV"]} kvar={parameters["kVAR"]}")\n\n'
+            print(f"Generated Edit command for Reactor: {edit_command}")
+        
+        else: 
+            # Error detection for unsupported component type
+            print(f'Component Type: {component_type} not found')
 
         # Find where "Save Circuit" is in the file and insert before it
         for i, line in enumerate(lines):
@@ -227,6 +248,84 @@ def modify_component():
         else:
             # If "Save Circuit" isn't found, just append at the end
             lines.append(edit_command)
+
+        # Write updated content back to the file
+        with open(local_file, "w") as file:
+            file.writelines(lines)
+
+        # Upload the modified file back to S3
+        try:
+            s3_client.upload_file(local_file, BUCKET_NAME, new_dss_file_key)
+        except Exception as e:
+            return jsonify({"error": f"Failed to upload file to S3: {str(e)}"}), 500
+
+        return jsonify({"message": "Python file updated successfully.", "new_file": new_dss_file_key}), 200
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+if __name__ == "__main__":
+    app.run(debug=True)
+
+# add component method using py dss commands
+@app.route('/add_component', methods=['POST'])
+def modify_component():
+    try:
+        data = request.json
+        print(f"Received data: {data}")
+
+        parameters = data.get("parameters")
+        component_type = data.get('component_type')
+        component_id = data.get('component_id')
+
+        if not parameters:
+            return jsonify({"error": "Missing parameters"}), 400
+        
+         # Download Python file from S3
+        local_file = "/tmp/temp_python_file.py"
+        s3_client.download_file(BUCKET_NAME, DSS_FILE_KEY, local_file)
+
+        # Read the existing file content
+        with open(local_file, "r") as file:
+            lines = file.readlines()
+
+        # Prepare lists for connections, voltages, and kVA if the component is a transformer
+        if component_type.lower() == "transformer":
+            conns = [parameters["Conn1"], parameters["Conn2"]]
+            kvs = [parameters["kV1"], parameters["kV2"]]
+            kvas = [parameters["kVA1"], parameters["kVA2"]]
+            new_command = f'dss.text("New Transformer.{component_id} Windings={parameters["Windings"]} Phases={parameters["Phases"]} Xhl={parameters["Xhl"]} Conns={conns} kVs={kvs} kVAs={kvas}")\n\n'
+            print(f"Generated New command for Transformer: {new_command}")
+        
+        elif component_type.lower() == "capacitor":
+            new_command = f'dss.text("New Capacitor.{component_id} Bus1={parameters["Bus1"]} Phases={parameters["Phases"]} kvar={parameters["kVAR"]} kV={parameters["kV"]}")\n\n'
+            print(f"Generated New command for Capacitor: {new_command}")
+
+        elif component_type.lower() == "generator":
+            new_command = f'dss.text("New Generator.{component_id} Bus1={parameters["Bus1"]} Phases={parameters["Phases"]} kV={parameters["kV"]} kW={parameters["kW"]} kvar={parameters["kvar"]} Model={parameters["Model"]}")\n\n'
+            print(f"Generated New command for Generator: {new_command}")
+
+        elif component_type.lower() == "fuse":
+            new_command = f'dss.text("New Fuse.{component_id} MonitoredObj={parameters["MonitoredObj"]} RatedCurrent={parameters["RatedCurrent"]}")\n\n'
+            print(f"Generated New command for Fuse: {new_command}")
+        
+        elif component_type.lower() == "reactor":
+            new_command = f'dss.text("New Reactor.{component_id} Bus1={parameters["Bus1"]} Phases={parameters["Phases"]} kV={parameters["kV"]} kvar={parameters["kVAR"]}")\n\n'
+            print(f"Generated New command for Reactor: {new_command}")
+        
+        else: 
+            # Error detection for unsupported component type
+            print(f'Component Type: {component_type} not found')
+
+        # Find where "Save Circuit" is in the file and insert before it
+        for i, line in enumerate(lines):
+            if '# Save' in line:  # Look for Save Circuit line
+                lines.insert(i, new_command)  # Insert edit command before it
+                break
+        else:
+            # If "Save Circuit" isn't found, just append at the end
+            lines.append(new_command)
 
         # Write updated content back to the file
         with open(local_file, "w") as file:
