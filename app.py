@@ -270,7 +270,7 @@ if __name__ == "__main__":
 
 # add component method using py dss commands
 @app.route('/add_component', methods=['POST'])
-def modify_component():
+def add_component():
     try:
         data = request.json
         print(f"Received data: {data}")
