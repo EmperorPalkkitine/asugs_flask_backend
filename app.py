@@ -101,11 +101,11 @@ def get_data(component_id):
             },
             'Capacitor': {
                 'table': 'Capacitor',
-                'columns': ['Phases', 'kVAR', 'kV', 'Bus1']
+                'columns': ['Phases', 'kVAR', 'kV']
             },
             'Generator': {
                 'table': 'Generator',
-                'columns': ['Phases', 'kV', 'kW', 'kvar', 'Bus1','Model']
+                'columns': ['Phases', 'kV', 'kW', 'kvar','Model']
             },
             'Fuse' : {
                 'table': 'Fuse',
