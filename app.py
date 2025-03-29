@@ -26,10 +26,10 @@ AWS_ACCESS_KEY = os.getenv('AWS_ACCESS_KEY_ID')
 AWS_SECRET_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
 AWS_REGION = os.getenv('AWS_REGION', 'us-east-2')
 BUCKET_NAME = "gridscout"
-DSS_FILE_KEY = "DSS_Tassel.py"  # Key to the OpenDSS .py file in the bucket
+DSS_FILE_KEY = "Tassel.py"  # Key to the OpenDSS .py file in the bucket
 CSV_FILE_KEY = "IEEE37_BusXY.csv" # Key to bus coord CSV file in s3 bucket
 readable_timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-new_dss_file_key = f"DSS_Tassel_{readable_timestamp}.py"
+new_dss_file_key = f"Tassel{readable_timestamp}.py"
 
 # S3 Client Initialization
 s3_client = boto3.client(
