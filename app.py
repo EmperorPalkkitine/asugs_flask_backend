@@ -278,6 +278,8 @@ def add_component():
         parameters = data.get("parameters")
         component_type = data.get('component_type')
         component_id = data.get('component_id')
+        bus1 = data.get('Bus1')
+        bus2 = data.get('Bus2')
 
         if not parameters:
             return jsonify({"error": "Missing parameters"}), 400
@@ -297,7 +299,7 @@ def add_component():
             kvas = [parameters["kVA1"], parameters["kVA2"]]
             new_command = f'dss.text("New Transformer.{component_id} Windings={parameters["Windings"]} Phases={parameters["Phases"]} Xhl={parameters["Xhl"]} Conns={conns} kVs={kvs} kVAs={kvas}")\n\n'
             print(f"Generated New command for Transformer: {new_command}")
-            print(f"Parameters: {parameters}")
+            print(f"Bus 1: {bus1} Bus 2: {bus2}")
 
         elif component_type.lower() == "capacitor":
             new_command = f'dss.text("New Capacitor.{component_id} Bus1={parameters["Bus1"]} Phases={parameters["Phases"]} kvar={parameters["kVAR"]} kV={parameters["kV"]}")\n\n'
