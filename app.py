@@ -294,10 +294,11 @@ def add_component():
 
         # Prepare lists for connections, voltages, and kVA if the component is a transformer
         if component_type.lower() == "transformer":
+            buses = [bus1, bus2]
             conns = [parameters["Conn1"], parameters["Conn2"]]
             kvs = [parameters["kV1"], parameters["kV2"]]
             kvas = [parameters["kVA1"], parameters["kVA2"]]
-            new_command = f'dss.text("New Transformer.{component_id} Windings={parameters["Windings"]} Phases={parameters["Phases"]} Xhl={parameters["Xhl"]} Conns={conns} kVs={kvs} kVAs={kvas}")\n\n'
+            new_command = f'dss.text("New Transformer.{component_id} Windings={parameters["Windings"]} Phases={parameters["Phases"]} Xhl={parameters["Xhl"]} buses={buses} Conns={conns} kVs={kvs} kVAs={kvas}")\n\n'
             print(f"Generated New command for Transformer: {new_command}")
             print(f"Bus 1: {bus1} Bus 2: {bus2}")
 
