@@ -132,6 +132,10 @@ def get_data(equipment_id):
         print(f"Executing query: {query}, with equipment_id: {equipment_id}")  # Debug print
 
         cursor.execute(query, (equipment_id,))
+        
+        # Make sure any previous results are cleared
+        cursor.fetchall()  # Clear any remaining results
+        
         result = cursor.fetchone()
 
         if not result:
@@ -143,6 +147,7 @@ def get_data(equipment_id):
     except Exception as e:
         print(f"Error: {str(e)}")  # Debug print
         return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+
 
 #Modify component method using py dss commands and update "Instance_Tracker" table in mySQL database
 @app.route('/modify_component', methods=['POST'])
