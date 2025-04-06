@@ -90,6 +90,7 @@ def process_work_order(work_order_number):
 def get_data(equipment_id):
     try:
         component_type = request.args.get('component_type')
+        print(f"Received component type: {component_type}, and equipment ID: {equipment_id}")
 
         if not component_type or not equipment_id:
             return jsonify({"error": "Component type and ID are required"}), 400
@@ -122,10 +123,13 @@ def get_data(equipment_id):
         if not component_info:
             return jsonify({"error": "Invalid component type"}), 400
 
+        app.logger.debug(f"Executing query: {query} with equipment_id: {equipment_id}")
+
         table_name = component_info['table']
         required_columns = component_info['columns']
         columns_str = ', '.join(required_columns)
         query = f"SELECT {columns_str} FROM {table_name} WHERE Equipment_ID = %s"
+        print(f"Executing query: {query}, with equipment ID: {equipment_id}")
 
         try:
             cursor.execute(query, (equipment_id,))
@@ -140,55 +144,8 @@ def get_data(equipment_id):
         return jsonify(data), 200
 
     except Exception as e:
+        print(f"Error: {str(e)}")
         return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
-
-
-# Load bus coordinates from the CSV file in S3
-def load_bus_coordinates_from_s3():
-    local_csv_file = "/tmp/bus_coords.csv"
-    
-    try:
-        s3_client.download_file(BUCKET_NAME, CSV_FILE_KEY, local_csv_file)
-    except boto3.exceptions.S3DownloadError as e:
-        return jsonify({"error": f"S3 download error: {str(e)}"}), 500
-    except Exception as e:
-        return jsonify({"error": f"Unexpected error while downloading file from S3: {str(e)}"}), 500
-
-    bus_coords = {}
-    with open(local_csv_file, "r") as csvfile:
-        reader = csv.reader(csvfile)  # Use csv.reader instead of csv.DictReader
-        for row in reader:
-            if len(row) >= 3:  # Check if there are enough columns
-                bus_coords[row[0]] = (float(row[1]), float(row[2]))  # Assuming columns are Bus, X, Y
-
-    return bus_coords
-
-# Find the closest bus to a given geolocation
-def find_closest_bus(bus_coords, target_location):
-    target_x, target_y = target_location
-    closest_bus = None
-    min_distance = float("inf")
-
-    for bus, (x, y) in bus_coords.items():
-        distance = math.sqrt((x - target_x) ** 2 + (y - target_y) ** 2)
-        if distance < min_distance:
-            min_distance = distance
-            closest_bus = bus
-
-    return closest_bus
-
-# Update parameters in a specific line
-def update_line_parameter(line, key, value):
-    if f"{key.casefold()}=" in line:
-        parts = line.split()
-        for i, part in enumerate(parts):
-            if part.startswith(f"{key.casefold()}="):
-                parts[i] = f"{key.lower()}={value}"
-        line = " ".join(parts)
-        print(f"Updated line: {line}")
-    return line
-
-# Modify OpenDSS file based on geolocation and parameters
 
 #Modify component method using py dss commands and update "Instance_Tracker" table in mySQL database
 @app.route('/modify_component', methods=['POST'])
@@ -310,7 +267,7 @@ def add_component():
         user_id = data.get('user_id')
         tracking_id = data.get('work_order_id')
         notes = data.get('notes')
-        
+
         if not parameters:
             return jsonify({"error": "Missing parameters"}), 400
         
