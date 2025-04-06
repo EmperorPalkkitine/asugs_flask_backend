@@ -190,7 +190,7 @@ def update_line_parameter(line, key, value):
 
 # Modify OpenDSS file based on geolocation and parameters
 
-#Modify component method using py dss commands
+#Modify component method using py dss commands and update "Instance_Tracker" table in mySQL database
 @app.route('/modify_component', methods=['POST'])
 def modify_component():
     try:
@@ -200,6 +200,12 @@ def modify_component():
         parameters = data.get("parameters")
         component_type = data.get('component_type')
         component_id = data.get('component_id')
+        equipment_id = data.get('equipment_id')
+        serial_num = data.get('serial_number')
+        geo_loc = data.get('geolocation')
+        user_id = data.get('user_id')
+        tracking_id = data.get('work_order_id')
+        notes = data.get('notes')
 
         if not parameters:
             return jsonify({"error": "Missing parameters"}), 400
@@ -239,6 +245,7 @@ def modify_component():
         else: 
             # Error detection for unsupported component type
             print(f'Component Type: {component_type} not found')
+            return jsonify({"error": f"Unsupported component type: {component_type}"}), 400
 
         # Find where "Save Circuit" is in the file and insert before it
         for i, line in enumerate(lines):
@@ -259,7 +266,26 @@ def modify_component():
         except Exception as e:
             return jsonify({"error": f"Failed to upload file to S3: {str(e)}"}), 500
 
-        return jsonify({"message": "Python file updated successfully.", "new_file": new_dss_file_key}), 200
+        insert_query = """
+            INSERT INTO Instance_Tracker 
+            (Equipment_ID, Serial_Number, Geo_Loc, User_ID, Tracking_ID, Notes)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """
+        values = (
+            equipment_id,
+            serial_num,
+            geo_loc,
+            user_id,
+            tracking_id,
+            notes
+        )
+
+        cursor = mysql.connection.cursor()
+        cursor.execute(insert_query, values)
+        mysql.connection.commit()
+        cursor.close()
+
+        return jsonify({'message': "Component modified and instance tracked successfully", "new_file": new_dss_file_key}), 200
 
     except Exception as e:
         print(f"Error: {str(e)}")
