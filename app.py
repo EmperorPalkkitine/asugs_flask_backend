@@ -90,7 +90,7 @@ def process_work_order(work_order_number):
 def get_data(equipment_id):
     try:
         component_type = request.args.get('component_type')
-        print(f"Received component type: {component_type}, and equipment ID: {equipment_id}")
+        print(f"Received component_type: {component_type}, equipment_id: {equipment_id}")  # Debug print
 
         if not component_type or not equipment_id:
             return jsonify({"error": "Component type and ID are required"}), 400
@@ -123,19 +123,16 @@ def get_data(equipment_id):
         if not component_info:
             return jsonify({"error": "Invalid component type"}), 400
 
-        app.logger.debug(f"Executing query: {query} with equipment_id: {equipment_id}")
-
         table_name = component_info['table']
         required_columns = component_info['columns']
         columns_str = ', '.join(required_columns)
+        
+        # Ensure query is defined before it is used
         query = f"SELECT {columns_str} FROM {table_name} WHERE Equipment_ID = %s"
-        print(f"Executing query: {query}, with equipment ID: {equipment_id}")
+        print(f"Executing query: {query}, with equipment_id: {equipment_id}")  # Debug print
 
-        try:
-            cursor.execute(query, (equipment_id,))
-            result = cursor.fetchone()
-        except mysql.connector.Error as err:
-            return jsonify({"error": f"MySQL query error: {str(err)}"}), 500
+        cursor.execute(query, (equipment_id,))
+        result = cursor.fetchone()
 
         if not result:
             return jsonify({"error": "Component not found"}), 404
@@ -144,7 +141,7 @@ def get_data(equipment_id):
         return jsonify(data), 200
 
     except Exception as e:
-        print(f"Error: {str(e)}")
+        print(f"Error: {str(e)}")  # Debug print
         return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
 
 #Modify component method using py dss commands and update "Instance_Tracker" table in mySQL database
