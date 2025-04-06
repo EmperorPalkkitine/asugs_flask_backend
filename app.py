@@ -269,7 +269,7 @@ def modify_component():
         insert_query = """
             INSERT INTO Instance_Tracker 
             (Equipment_ID, Serial_Number, Geo_Loc, User_ID, Tracking_ID, Notes)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s)
         """
         values = (
             equipment_id,
