@@ -129,7 +129,7 @@ def get_data(equipment_id):
         
         # Ensure query is defined before it is used
         query = f"SELECT {columns_str} FROM {table_name} WHERE Equipment_ID = %s"
-        cursor.execute(query, (equipment_id,))
+        cursor.execute(query, (equipment_id.strip(),))
         print(f"Executing query: {query}, with equipment_id: {equipment_id}")  # Debug print
         
         # Make sure any previous results are cleared
