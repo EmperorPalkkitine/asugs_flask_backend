@@ -86,12 +86,12 @@ def process_work_order(work_order_number):
         return jsonify({"error": str(e)}), 500
 
 # Retrieve component data from MySQL
-@app.route('/get_data/<component_id>', methods=['GET'])
-def get_data(component_id):
+@app.route('/get_data/<equipment_id>', methods=['GET'])
+def get_data(equipment_id):
     try:
         component_type = request.args.get('component_type')
 
-        if not component_type or not component_id:
+        if not component_type or not equipment_id:
             return jsonify({"error": "Component type and ID are required"}), 400
 
         table_mapping = {
@@ -128,7 +128,7 @@ def get_data(component_id):
         query = f"SELECT {columns_str} FROM {table_name} WHERE Equipment_ID = %s"
 
         try:
-            cursor.execute(query, (component_id,))
+            cursor.execute(query, (equipment_id,))
             result = cursor.fetchone()
         except mysql.connector.Error as err:
             return jsonify({"error": f"MySQL query error: {str(err)}"}), 500
