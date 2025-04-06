@@ -304,7 +304,13 @@ def add_component():
         parameters = data.get("parameters")
         component_type = data.get('component_type')
         component_id = data.get('component_id')
-
+        equipment_id = data.get('equipment_id')
+        serial_num = data.get('serial_number')
+        geo_loc = data.get('geolocation')
+        user_id = data.get('user_id')
+        tracking_id = data.get('work_order_id')
+        notes = data.get('notes')
+        
         if not parameters:
             return jsonify({"error": "Missing parameters"}), 400
         
@@ -363,9 +369,28 @@ def add_component():
             s3_client.upload_file(local_file, BUCKET_NAME, new_dss_file_key)
         except Exception as e:
             return jsonify({"error": f"Failed to upload file to S3: {str(e)}"}), 500
+        
+        insert_query = """
+            INSERT INTO Instance_Tracker 
+            (Equipment_ID, Serial_Number, Geo_Loc, User_ID, Tracking_ID, Notes)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """
+        values = (
+            equipment_id,
+            serial_num,
+            geo_loc,
+            user_id,
+            tracking_id,
+            notes
+        )
 
-        return jsonify({"message": "Python file updated successfully.", "new_file": new_dss_file_key}), 200
+        cursor = db.cursor()
+        cursor.execute(insert_query, values)
+        db.commit()
+        cursor.close()
 
+        return jsonify({'message': "Component modified and instance tracked successfully", "new_file": new_dss_file_key}), 200
+    
     except Exception as e:
         print(f"Error: {str(e)}")
         return jsonify({"error": str(e)}), 500
