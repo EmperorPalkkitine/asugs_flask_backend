@@ -64,7 +64,11 @@ def process_work_order(work_order_number):
         # Check if old component ID exists in the circuit table
         check_query = "SELECT * FROM OpenDSS WHERE Circuit_ID = %s AND Schematic_Component_ID = %s"
         cursor.execute(check_query, (Circuit_ID, Schematic_ID,))
-        old_component_exists = cursor.fetchone() is not None
+        old_component_row = cursor.fetchone
+        old_component_exists = old_component_row is not None
+
+        while cursor.nextset():
+            pass
 
         # Determine the action in the application
         if old_component_exists:
