@@ -280,9 +280,9 @@ def modify_component():
             notes
         )
 
-        cursor = mysql.connection.cursor()
+        cursor = db.cursor()
         cursor.execute(insert_query, values)
-        mysql.connection.commit()
+        db.commit()
         cursor.close()
 
         return jsonify({'message': "Component modified and instance tracked successfully", "new_file": new_dss_file_key}), 200
