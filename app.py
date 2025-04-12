@@ -74,6 +74,7 @@ def process_work_order(work_order_number):
             action = "replace_component"
         else:
             action = "add_component"
+        print(f"Action: {action}")
         
         # Return response for the Flutter app
         return jsonify({  
