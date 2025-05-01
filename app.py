@@ -169,6 +169,9 @@ def modify_component():
         if not parameters:
             return jsonify({"error": "Missing parameters"}), 400
         
+        readable_timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        new_dss_file_key = f"Tassel{readable_timestamp}.py"
+        
          # Download Python file from S3
         local_file = "/tmp/temp_python_file.py"
         s3_client.download_file(BUCKET_NAME, DSS_FILE_KEY, local_file)
@@ -272,6 +275,9 @@ def add_component():
 
         if not parameters:
             return jsonify({"error": "Missing parameters"}), 400
+        
+        readable_timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        new_dss_file_key = f"Tassel{readable_timestamp}.py"
         
          # Download Python file from S3
         local_file = "/tmp/temp_python_file.py"
